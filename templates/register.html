@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobMax — Register</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f0a;
+    --surface: #141810;
+    --surface2: #1c2118;
+    --border: #2a3326;
+    --accent: #7ef56a;
+    --accent2: #f5e96a;
+    --accent3: #6ab8f5;
+    --text: #e8f0e4;
+    --muted: #6b7c65;
+    --danger: #f56a6a;
+    --success: #7ef56a;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+    z-index: 1;
+    animation: fadeUp 0.4s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .logo-icon {
+    width: 38px; height: 38px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .logo-icon svg { width: 20px; height: 20px; }
+  .logo-text { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo-sub { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; text-transform: uppercase; }
+
+  .page-title { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--muted); }
+  .field input.valid { border-color: rgba(126,245,106,0.5); }
+  .field input.invalid { border-color: rgba(245,106,106,0.5); }
+
+  /* Worker type picker */
+  .section-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .worker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .w-opt {
+    padding: 10px 4px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+  }
+  .w-opt:hover { border-color: var(--accent); color: var(--text); }
+  .w-opt.active { background: rgba(126,245,106,0.1); border-color: var(--accent); color: var(--accent); }
+  .w-opt .wicon { display: block; font-size: 20px; margin-bottom: 4px; }
+
+  /* Password strength */
+  .pw-strength { margin-top: 6px; display: flex; gap: 4px; }
+  .pw-bar {
+    flex: 1; height: 3px; border-radius: 2px;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+  .pw-bar.weak { background: var(--danger); }
+  .pw-bar.medium { background: var(--accent2); }
+  .pw-bar.strong { background: var(--accent); }
+  .pw-label { font-size: 11px; color: var(--muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+
+  .btn-main {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #0c0f0a;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+    margin-bottom: 16px;
+  }
+  .btn-main:hover { background: #9dff8a; transform: translateY(-1px); }
+  .btn-main:active { transform: translateY(0); }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .divider span { flex: 1; height: 1px; background: var(--border); }
+  .divider p { font-size: 12px; color: var(--muted); }
+
+  .btn-google {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .btn-google:hover { border-color: var(--muted); }
+  .btn-google svg { width: 18px; height: 18px; }
+
+  .footer-link {
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .footer-link a { color: var(--accent); text-decoration: none; font-weight: 600; }
+  .footer-link a:hover { text-decoration: underline; }
+
+  .error-msg {
+    background: rgba(245,106,106,0.08);
+    border: 1px solid rgba(245,106,106,0.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--danger);
+    margin-bottom: 14px;
+    display: none;
+  }
+  .error-msg.show { display: block; }
+
+  .success-msg {
+    background: rgba(126,245,106,0.08);
+    border: 1px solid rgba(126,245,106,0.25);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: none;
+  }
+  .success-msg.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="4" width="4" height="12" rx="1" fill="#0c0f0a"/>
+        <rect x="8" y="7" width="4" height="9" rx="1" fill="#0c0f0a"/>
+        <rect x="14" y="2" width="4" height="14" rx="1" fill="#0c0f0a"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">JobMax</div>
+      <div class="logo-sub">Greedy Scheduler</div>
+    </div>
+  </div>
+
+  <div class="page-title">Create account</div>
+  <div class="page-sub">Start scheduling your jobs for maximum profit</div>
+
+  <div class="error-msg" id="error-msg"></div>
+  <div class="success-msg" id="success-msg">✓ Account created! Redirecting to dashboard...</div>
+
+  <div class="field">
+    <label>Full Name</label>
+    <input type="text" id="fullname" placeholder="e.g. Ramesh Kumar" />
+  </div>
+
+  <div class="field">
+    <label>Email Address</label>
+    <input type="email" id="email" placeholder="you@example.com" />
+  </div>
+
+  <div class="field">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="Min. 6 characters" oninput="checkStrength(this.value)" />
+    <div class="pw-strength">
+      <div class="pw-bar" id="bar1"></div>
+      <div class="pw-bar" id="bar2"></div>
+      <div class="pw-bar" id="bar3"></div>
+    </div>
+    <div class="pw-label" id="pw-label">Enter a password</div>
+  </div>
+
+  <div class="field">
+    <label>Confirm Password</label>
+    <input type="password" id="confirm-password" placeholder="Re-enter password" />
+  </div>
+
+  <!-- Worker Type -->
+  <div class="section-label">I am a —</div>
+  <div class="worker-grid" id="worker-grid">
+    <div class="w-opt active" onclick="selectWorker(this,'Labour')"><span class="wicon">👷</span>Labour</div>
+    <div class="w-opt" onclick="selectWorker(this,'Carpenter')"><span class="wicon">🪚</span>Carpenter</div>
+    <div class="w-opt" onclick="selectWorker(this,'Plumber')"><span class="wicon">🔧</span>Plumber</div>
+    <div class="w-opt" onclick="selectWorker(this,'Electrician')"><span class="wicon">⚡</span>Electric</div>
+    <div class="w-opt" onclick="selectWorker(this,'Painter')"><span class="wicon">🎨</span>Painter</div>
+  </div>
+
+  <button class="btn-main" onclick="handleRegister()">Create Account →</button>
+
+  <div class="divider"><span></span><p>or</p><span></span></div>
+
+  <button class="btn-google" onclick="handleGoogleRegister()">
+    <svg viewBox="0 0 18 18" fill="none">
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+      <path d="M3.964 10.706A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05"/>
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+    </svg>
+    Sign up with Google
+  </button>
+
+  <div class="footer-link">
+    Already have an account? <a href="/login">Login here</a>
+  </div>
+</div>
+
+<script>
+  let selectedWorker = 'Labour';
+
+  function selectWorker(el, w) {
+    document.querySelectorAll('.w-opt').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    selectedWorker = w;
+  }
+
+  function checkStrength(val) {
+    const b1 = document.getElementById('bar1');
+    const b2 = document.getElementById('bar2');
+    const b3 = document.getElementById('bar3');
+    const lbl = document.getElementById('pw-label');
+    [b1,b2,b3].forEach(b => b.className = 'pw-bar');
+
+    if (val.length === 0) { lbl.textContent = 'Enter a password'; return; }
+    if (val.length < 6) {
+      b1.classList.add('weak');
+      lbl.textContent = 'Too short';
+    } else if (val.length < 10 || !/[0-9]/.test(val)) {
+      b1.classList.add('medium'); b2.classList.add('medium');
+      lbl.textContent = 'Medium strength';
+    } else {
+      b1.classList.add('strong'); b2.classList.add('strong'); b3.classList.add('strong');
+      lbl.textContent = 'Strong password';
+    }
+  }
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ── Replace with your Firebase config ──
+  const firebaseConfig = {
+    apiKey: "AIzaSyDom0HM4xQeiY300EqCvhuwF5q4pZfLW10",
+    authDomain: "jobmax-scheduler.firebaseapp.com",
+    projectId: "jobmax-scheduler",
+    storageBucket: "jobmax-scheduler.firebasestorage.app",
+    messagingSenderId: "318072359776",
+    appId: "1:318072359776:web:ae2d9986bf2c5233fd2c05"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  async function saveUserProfile(uid, name, email, workerType) {
+    await setDoc(doc(db, 'users', uid), {
+      name, email,
+      workerType,
+      createdAt: new Date().toISOString()
+    });
+  }
+
+  window.handleRegister = async () => {
+    const name = document.getElementById('fullname').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm = document.getElementById('confirm-password').value;
+    const errEl = document.getElementById('error-msg');
+    const sucEl = document.getElementById('success-msg');
+    errEl.classList.remove('show');
+    sucEl.classList.remove('show');
+
+    if (!name || !email || !password || !confirm) {
+      errEl.textContent = 'Please fill in all fields.'; errEl.classList.add('show'); return;
+    }
+    if (password !== confirm) {
+      errEl.textContent = 'Passwords do not match.'; errEl.classList.add('show'); return;
+    }
+    if (password.length < 6) {
+      errEl.textContent = 'Password must be at least 6 characters.'; errEl.classList.add('show'); return;
+    }
+
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: name });
+      await saveUserProfile(cred.user.uid, name, email, selectedWorker);
+      sucEl.classList.add('show');
+      setTimeout(() => window.location.href = "/dashboard", 1500);
+    } catch (e) {
+      if (e.code === 'auth/email-already-in-use')
+        errEl.textContent = 'This email is already registered. Try logging in.';
+      else
+        errEl.textContent = 'Registration failed: ' + e.message;
+      errEl.classList.add('show');
+    }
+  };
+
+  window.handleGoogleRegister = async () => {
+    const errEl = document.getElementById('error-msg');
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      await saveUserProfile(user.uid, user.displayName, user.email, selectedWorker);
+      window.location.href = "/dashboard";
+    } catch (e) {
+      errEl.textContent = 'Google sign-up failed. Please try again.';
+      errEl.classList.add('show');
+    }
+  };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+# requirements.txt — JobMax Project Dependencies
+# Install with: pip install -r requirements.txt
+
+flask==3.0.3
+firebase-admin==6.5.0
+python-dotenv==1.0.1

@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobMax — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f0a;
+    --surface: #141810;
+    --surface2: #1c2118;
+    --border: #2a3326;
+    --accent: #7ef56a;
+    --accent2: #f5e96a;
+    --accent3: #6ab8f5;
+    --text: #e8f0e4;
+    --muted: #6b7c65;
+    --danger: #f56a6a;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(12,15,10,0.92);
+    backdrop-filter: blur(8px);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 34px; height: 34px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon svg { width: 18px; height: 18px; }
+  .logo-text { font-size: 18px; font-weight: 800; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .user-chip {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 6px 14px 6px 8px;
+  }
+  .user-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(126,245,106,0.15); border: 1px solid rgba(126,245,106,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: var(--accent);
+  }
+  .user-name { font-size: 13px; font-weight: 600; }
+  .user-role { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .btn-logout {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); padding: 7px 14px; border-radius: 8px;
+    font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    background: var(--surface);
+  }
+  .tab {
+    padding: 14px 20px; font-size: 14px; font-weight: 600;
+    color: var(--muted); border-bottom: 2px solid transparent;
+    cursor: pointer; transition: all 0.15s; margin-bottom: -1px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── LAYOUT ── */
+  .content { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .stat-card.highlight { border-color: rgba(126,245,106,0.3); background: rgba(126,245,106,0.04); }
+  .s-label { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono',monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .s-val { font-size: 26px; font-weight: 800; }
+  .s-val.green { color: var(--accent); }
+
+  /* ── SECTION ── */
+  .section-label { font-family: 'JetBrains Mono',monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+  .panel-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .panel-title { font-weight: 700; font-size: 14px; }
+
+  /* ── FORM ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; padding: 16px 20px; }
+  .form-field label { display: block; font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono',monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+  .form-field input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; color: var(--text);
+    font-family: 'JetBrains Mono',monospace; font-size: 13px; outline: none; transition: border-color 0.15s;
+  }
+  .form-field input:focus { border-color: var(--accent); }
+  .form-field input::placeholder { color: var(--muted); }
+
+  .btn { padding: 10px 18px; border-radius: 8px; font-family: 'Syne',sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: #0c0f0a; }
+  .btn-primary:hover { background: #9dff8a; }
+  .btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+  .btn-run { background: var(--accent); color: #0c0f0a; padding: 12px 32px; font-size: 14px; font-weight: 800; }
+  .btn-run:hover { background: #9dff8a; transform: translateY(-1px); }
+  .btn-sm-danger { background: transparent; color: var(--danger); border: none; font-size: 12px; cursor: pointer; padding: 4px 8px; font-family: 'Syne',sans-serif; font-weight: 600; }
+  .btn-sm-danger:hover { text-decoration: underline; }
+
+  .form-actions { display: flex; gap: 10px; padding: 0 20px 16px; }
+
+  /* ── TABLE ── */
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--surface2); }
+  th { padding: 9px 16px; text-align: left; font-size: 10px; font-family: 'JetBrains Mono',monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+  td { padding: 11px 16px; font-size: 13px; border-top: 1px solid var(--border); }
+  tbody tr:hover { background: var(--surface2); }
+  .tc-mono { font-family: 'JetBrains Mono',monospace; }
+  .tc-profit { font-family: 'JetBrains Mono',monospace; color: var(--accent2); font-weight: 500; }
+  .tc-deadline { font-family: 'JetBrains Mono',monospace; color: var(--accent3); }
+  .empty-row td { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; }
+
+  /* ── SCHEDULE RESULT ── */
+  .result-box { display: none; }
+  .result-box.show { display: block; animation: fadeIn 0.3s ease; }
+  .timeline { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tslot { flex: 1; min-width: 70px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 6px; text-align: center; }
+  .tslot.filled { background: rgba(126,245,106,0.08); border-color: rgba(126,245,106,0.35); }
+  .t-time { font-family: 'JetBrains Mono',monospace; font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+  .t-job { font-size: 12px; font-weight: 700; color: var(--accent); }
+  .t-profit-sm { font-family: 'JetBrains Mono',monospace; font-size: 10px; color: var(--accent2); margin-top: 2px; }
+  .tslot.empty .t-job { color: var(--muted); font-weight: 400; font-size: 11px; }
+
+  .steps-list { padding: 0 20px 16px; }
+  .step-item { display: flex; gap: 12px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .step-item:last-child { border-bottom: none; }
+  .step-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-family: 'JetBrains Mono',monospace; flex-shrink: 0; margin-top: 1px; }
+  .step-dot.ok { background: rgba(126,245,106,0.15); border: 1px solid var(--accent); color: var(--accent); }
+  .step-dot.skip { background: rgba(245,106,106,0.1); border: 1px solid var(--danger); color: var(--danger); }
+  .step-dot.info { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+  .jname { font-weight: 700; color: var(--accent2); }
+  .slot-info { font-family: 'JetBrains Mono',monospace; font-size: 11px; color: var(--accent3); }
+  .skip-txt { color: var(--danger); font-size: 12px; }
+
+  .result-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .rs-card { background: var(--surface2); border-radius: 8px; padding: 12px; }
+  .rs-label { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono',monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .rs-val { font-size: 20px; font-weight: 800; }
+  .rs-val.green { color: var(--accent); }
+
+  .save-strip { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: rgba(126,245,106,0.04); border-top: 1px solid rgba(126,245,106,0.15); }
+  .save-strip p { font-size: 13px; color: var(--muted); }
+  .save-strip p span { color: var(--accent); font-weight: 700; }
+
+  /* ── HISTORY ── */
+  .history-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.15s;
+  }
+  .history-card:hover { border-color: var(--accent); }
+  .hc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .hc-date { font-family: 'JetBrains Mono',monospace; font-size: 11px; color: var(--muted); }
+  .hc-profit { font-size: 18px; font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono',monospace; }
+  .hc-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .hc-tag { background: rgba(126,245,106,0.08); border: 1px solid rgba(126,245,106,0.2); color: var(--accent); font-size: 11px; padding: 3px 10px; border-radius: 20px; font-family: 'JetBrains Mono',monospace; }
+  .hc-tag.skip { background: rgba(245,106,106,0.08); border-color: rgba(245,106,106,0.2); color: var(--danger); }
+  .hc-meta { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+  .history-empty { text-align: center; padding: 48px; color: var(--muted); font-size: 14px; }
+
+  /* loading spinner */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 18px;
+    font-size: 13px; font-weight: 600;
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: rgba(126,245,106,0.4); color: var(--accent); }
+  .toast.error { border-color: rgba(245,106,106,0.4); color: var(--danger); }
+
+  @media(max-width:700px) {
+    .topbar { padding: 12px 16px; }
+    .tabs { padding: 0 16px; }
+    .content { padding: 20px 12px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .result-stats { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="4" width="4" height="12" rx="1" fill="#0c0f0a"/>
+        <rect x="8" y="7" width="4" height="9" rx="1" fill="#0c0f0a"/>
+        <rect x="14" y="2" width="4" height="14" rx="1" fill="#0c0f0a"/>
+      </svg>
+    </div>
+    <div class="logo-text">JobMax</div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-role" id="user-role">—</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()">Logout</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('scheduler',this)">⚡ Scheduler</div>
+  <div class="tab" onclick="switchTab('history',this)">📋 History</div>
+  <div class="tab" onclick="switchTab('profile',this)">👤 Profile</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- ── SCHEDULER TAB ── -->
+  <div class="tab-panel active" id="tab-scheduler">
+
+    <!-- Summary stats -->
+    <div class="stats-row">
+      <div class="stat-card highlight">
+        <div class="s-label">Total Profit Earned</div>
+        <div class="s-val green" id="stat-total-profit">₹0</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Schedules Run</div>
+        <div class="s-val" id="stat-schedules">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Jobs Completed</div>
+        <div class="s-val" id="stat-completed">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Worker Type</div>
+        <div class="s-val" style="font-size:18px;" id="stat-worker">—</div>
+      </div>
+    </div>
+
+    <!-- Add Jobs -->
+    <div class="section-label">Add Jobs</div>
+    <div class="panel-box">
+      <div class="panel-head">
+        <div class="panel-title">Pending Jobs</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);background:rgba(126,245,106,0.1);padding:4px 10px;border-radius:20px;" id="job-count">0 jobs</div>
+      </div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Job Name</label>
+          <input type="text" id="inp-name" placeholder="e.g. Fix Pipe A" />
+        </div>
+        <div class="form-field">
+          <label>Deadline (units)</label>
+          <input type="number" id="inp-deadline" placeholder="e.g. 3" min="1" />
+        </div>
+        <div class="form-field">
+          <label>Profit (₹)</label>
+          <input type="number" id="inp-profit" placeholder="e.g. 500" min="1" />
+        </div>
+        <div><button class="btn btn-primary" onclick="addJob()">+ Add</button></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="loadSample()">Load sample</button>
+        <button class="btn btn-secondary" onclick="clearJobs()">Clear all</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Job Name</th><th>Deadline</th><th>Profit</th><th></th></tr>
+        </thead>
+        <tbody id="job-tbody">
+          <tr class="empty-row"><td colspan="5">No jobs yet. Add one above or load sample data.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Run Button -->
+    <div style="text-align:center;margin-bottom:32px;">
+      <button class="btn btn-run" onclick="runScheduler()">▶ Run Greedy Scheduler</button>
+    </div>
+
+    <!-- Result -->
+    <div class="result-box" id="result-box">
+      <div class="section-label">Result</div>
+      <div class="panel-box">
+        <div class="panel-head">
+          <div class="panel-title">Schedule Output</div>
+          <div style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;background:rgba(126,245,106,0.1);padding:4px 10px;border-radius:20px;">✓ Optimal</div>
+        </div>const firebaseConfig = {
+  apiKey: "AIzaSyDom0HM4xQeiY300EqCvhuwF5q4pZfLW10",
+  authDomain: "jobmax-scheduler.firebaseapp.com",
+  databaseURL: "https://jobmax-scheduler-default-rtdb.firebaseio.com",
+  projectId: "jobmax-scheduler",
+  storageBucket: "jobmax-scheduler.firebasestorage.app",
+  messagingSenderId: "318072359776",
+  appId: "1:318072359776:web:ae2d9986bf2c5233fd2c05",
+  measurementId: "G-QB881KNNZE"
+};
+
+        <div class="result-stats">
+          <div class="rs-card"><div class="rs-label">Max Profit</div><div class="rs-val green" id="r-profit">₹0</div></div>
+          <div class="rs-card"><div class="rs-label">Scheduled</div><div class="rs-val" id="r-scheduled">0</div></div>
+          <div class="rs-card"><div class="rs-label">Skipped</div><div class="rs-val" id="r-skipped">0</div></div>
+        </div>
+
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
+          <div class="section-label" style="margin-bottom:10px;">Timeline</div>
+          <div class="timeline" id="result-timeline"></div>
+        </div>
+
+        <div class="steps-list" id="result-steps"></div>
+
+        <div class="save-strip">
+          <p>Save this schedule to your history? <span id="save-profit-preview"></span></p>
+          <button class="btn btn-primary" onclick="saveSchedule()" id="btn-save">💾 Save to Firebase</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── HISTORY TAB ── -->
+  <div class="tab-panel" id="tab-history">
+    <div class="section-label">Past Schedules</div>
+    <div id="history-container">
+      <div class="history-empty"><span class="spinner"></span> Loading history...</div>
+    </div>
+  </div>
+
+  <!-- ── PROFILE TAB ── -->
+  <div class="tab-panel" id="tab-profile">
+    <div class="section-label">Your Profile</div>
+    <div class="panel-box" style="padding:24px;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">
+        <div style="width:56px;height:56px;border-radius:50%;background:rgba(126,245,106,0.15);border:2px solid rgba(126,245,106,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:var(--accent);" id="profile-avatar">?</div>
+        <div>
+          <div style="font-size:20px;font-weight:800;" id="profile-name">—</div>
+          <div style="font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;" id="profile-email">—</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="rs-card"><div class="rs-label">Worker Type</div><div style="font-size:16px;font-weight:700;margin-top:4px;" id="profile-worker">—</div></div>
+        <div class="rs-card"><div class="rs-label">Member Since</div><div style="font-size:16px;font-weight:700;margin-top:4px;" id="profile-since">—</div></div>
+        <div class="rs-card"><div class="rs-label">Schedules Run</div><div style="font-size:16px;font-weight:700;margin-top:4px;color:var(--accent);" id="profile-schedules">0</div></div>
+        <div class="rs-card"><div class="rs-label">Total Profit</div><div style="font-size:16px;font-weight:700;margin-top:4px;color:var(--accent);" id="profile-profit">₹0</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, updateDoc, increment }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ── Replace with your Firebase config ──
+  const firebaseConfig = {
+    apiKey: "AIzaSyDom0HM4xQeiY300EqCvhuwF5q4pZfLW10",
+    authDomain: "jobmax-scheduler.firebaseapp.com",
+    projectId: "jobmax-scheduler",
+    storageBucket: "jobmax-scheduler.firebasestorage.app",
+    messagingSenderId: "318072359776",
+    appId: "1:318072359776:web:ae2d9986bf2c5233fd2c05"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUser = null;
+  let userProfile = null;
+  let lastResult = null;
+
+  // ── Auth guard ──
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) { window.location.href = 'login.html'; return; }
+    currentUser = user;
+    await loadUserProfile(user.uid);
+    loadHistory();
+  });
+
+  async function loadUserProfile(uid) {
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      userProfile = snap.exists() ? snap.data() : { name: currentUser.displayName || 'User', workerType: 'Worker', totalProfit: 0, schedulesRun: 0 };
+      renderProfile();
+    } catch(e) {
+      userProfile = { name: currentUser.displayName || 'User', workerType: 'Worker', totalProfit: 0, schedulesRun: 0 };
+      renderProfile();
+    }
+  }
+
+  function renderProfile() {
+    const initials = (userProfile.name || 'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    document.getElementById('user-avatar').textContent = initials;
+    document.getElementById('user-name').textContent = userProfile.name || 'User';
+    document.getElementById('user-role').textContent = userProfile.workerType || 'Worker';
+    document.getElementById('stat-worker').textContent = userProfile.workerType || '—';
+    document.getElementById('stat-total-profit').textContent = '₹' + (userProfile.totalProfit || 0).toLocaleString();
+    document.getElementById('stat-schedules').textContent = userProfile.schedulesRun || 0;
+    document.getElementById('stat-completed').textContent = userProfile.jobsCompleted || 0;
+
+    document.getElementById('profile-avatar').textContent = initials;
+    document.getElementById('profile-name').textContent = userProfile.name || '—';
+    document.getElementById('profile-email').textContent = currentUser.email || '—';
+    document.getElementById('profile-worker').textContent = userProfile.workerType || '—';
+    document.getElementById('profile-since').textContent = userProfile.createdAt ? new Date(userProfile.createdAt).toLocaleDateString('en-IN',{month:'short',year:'numeric'}) : '—';
+    document.getElementById('profile-schedules').textContent = userProfile.schedulesRun || 0;
+    document.getElementById('profile-profit').textContent = '₹' + (userProfile.totalProfit || 0).toLocaleString();
+  }
+
+  // ── HISTORY ──
+  async function loadHistory() {
+    const container = document.getElementById('history-container');
+    try {
+      const q = query(
+        collection(db, 'schedules'),
+        where('userId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc')
+      );
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        container.innerHTML = '<div class="history-empty">No schedules saved yet. Run the scheduler and save your first result!</div>';
+        return;
+      }
+      container.innerHTML = snap.docs.map(d => {
+        const s = d.data();
+        const date = new Date(s.createdAt).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+        const tags = s.scheduledJobs.map(j => `<span class="hc-tag">${j.name}</span>`).join('');
+        const skips = s.skippedJobs.length ? `<span class="hc-tag skip">+${s.skippedJobs.length} skipped</span>` : '';
+        return `
+          <div class="history-card">
+            <div class="hc-top">
+              <div>
+                <div style="font-weight:700;font-size:15px;margin-bottom:4px;">${s.workerType} Schedule</div>
+                <div class="hc-date">${date}</div>
+              </div>
+              <div class="hc-profit">₹${s.totalProfit.toLocaleString()}</div>
+            </div>
+            <div class="hc-tags">${tags}${skips}</div>
+            <div class="hc-meta">${s.scheduledJobs.length} jobs scheduled · ${s.totalSlots} time slots</div>
+          </div>`;
+      }).join('');
+    } catch(e) {
+      container.innerHTML = '<div class="history-empty">Could not load history. Make sure Firestore is set up.</div>';
+    }
+  }
+
+  // ── SAVE SCHEDULE ──
+  window.saveSchedule = async () => {
+    if (!lastResult || !currentUser) return;
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Saving...';
+    try {
+      await addDoc(collection(db, 'schedules'), {
+        userId: currentUser.uid,
+        workerType: userProfile.workerType || 'Worker',
+        totalProfit: lastResult.totalProfit,
+        totalSlots: lastResult.maxDeadline,
+        scheduledJobs: lastResult.scheduled,
+        skippedJobs: lastResult.skipped,
+        createdAt: new Date().toISOString()
+      });
+      // Update user stats
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        totalProfit: increment(lastResult.totalProfit),
+        schedulesRun: increment(1),
+        jobsCompleted: increment(lastResult.scheduled.length)
+      });
+      showToast('✓ Schedule saved to Firebase!', 'success');
+      btn.textContent = '✓ Saved';
+      await loadUserProfile(currentUser.uid);
+      loadHistory();
+    } catch(e) {
+      showToast('Failed to save. Check Firebase config.', 'error');
+      btn.disabled = false;
+      btn.textContent = '💾 Save to Firebase';
+    }
+  };
+
+  window.handleLogout = async () => {
+    await signOut(auth);
+    window.location.href = 'login.html';
+  };
+
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+
+  window._firebaseLoaded = { db, auth, currentUser: () => currentUser, showToast, loadHistory };
+</script>
+
+<script>
+  // ── UI / Algorithm (non-module) ──
+  let jobs = [];
+  let jobId = 1;
+
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+    if (name === 'history' && window._firebaseLoaded) window._firebaseLoaded.loadHistory();
+  }
+
+  function addJob() {
+    const name = document.getElementById('inp-name').value.trim();
+    const deadline = parseInt(document.getElementById('inp-deadline').value);
+    const profit = parseInt(document.getElementById('inp-profit').value);
+    if (!name || !deadline || !profit || deadline < 1 || profit < 1) {
+      alert('Please fill in all fields with valid values.'); return;
+    }
+    jobs.push({ id: jobId++, name, deadline, profit });
+    document.getElementById('inp-name').value = '';
+    document.getElementById('inp-deadline').value = '';
+    document.getElementById('inp-profit').value = '';
+    renderTable();
+    document.getElementById('result-box').classList.remove('show');
+  }
+
+  function removeJob(id) {
+    jobs = jobs.filter(j => j.id !== id);
+    renderTable();
+  }
+
+  function clearJobs() {
+    jobs = []; jobId = 1; renderTable();
+    document.getElementById('result-box').classList.remove('show');
+  }
+
+  function loadSample() {
+    jobs = [
+      { id: jobId++, name: 'Fix Water Pipe', deadline: 2, profit: 500 },
+      { id: jobId++, name: 'Build Cabinet', deadline: 1, profit: 300 },
+      { id: jobId++, name: 'Paint Wall', deadline: 3, profit: 400 },
+      { id: jobId++, name: 'Lay Foundation', deadline: 2, profit: 700 },
+      { id: jobId++, name: 'Wire Circuit', deadline: 3, profit: 600 },
+      { id: jobId++, name: 'Install Sink', deadline: 1, profit: 200 },
+    ];
+    renderTable();
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('job-tbody');
+    document.getElementById('job-count').textContent = jobs.length + ' job' + (jobs.length !== 1 ? 's' : '');
+    if (!jobs.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No jobs yet. Add one above or load sample data.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = jobs.map((j, i) => `
+      <tr>
+        <td style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;">${i+1}</td>
+        <td style="font-weight:600;">${j.name}</td>
+        <td class="tc-deadline">T${j.deadline}</td>
+        <td class="tc-profit">₹${j.profit.toLocaleString()}</td>
+        <td><button class="btn-sm-danger" onclick="removeJob(${j.id})">✕ Remove</button></td>
+      </tr>`).join('');
+  }
+
+  // ── GREEDY ALGORITHM ──
+  function runScheduler() {
+    if (!jobs.length) { alert('Add at least one job first.'); return; }
+
+    const sorted = [...jobs].sort((a,b) => b.profit - a.profit);
+    const maxDeadline = Math.max(...jobs.map(j => j.deadline));
+    const slots = new Array(maxDeadline).fill(null);
+    const steps = [];
+    const scheduled = [];
+    const skipped = [];
+
+    steps.push({ type:'info', text:`Sorted <strong>${sorted.length} jobs</strong> by profit: ${sorted.map(j=>`<span class="jname">${j.name}</span>`).join(', ')}` });
+
+    for (const job of sorted) {
+      let placed = false;
+      for (let t = Math.min(job.deadline, maxDeadline) - 1; t >= 0; t--) {
+        if (slots[t] === null) {
+          slots[t] = job;
+          scheduled.push({ ...job, slot: t+1 });
+          steps.push({ type:'ok', text:`<span class="jname">${job.name}</span> (₹${job.profit.toLocaleString()}, deadline T${job.deadline}) → <span class="slot-info">slot ${t+1}</span>` });
+          placed = true; break;
+        }
+      }
+      if (!placed) {
+        skipped.push(job);
+        steps.push({ type:'skip', text:`<span class="jname">${job.name}</span> (₹${job.profit.toLocaleString()}) <span class="skip-txt">— no slot available before deadline T${job.deadline}</span>` });
+      }
+    }
+
+    const totalProfit = scheduled.reduce((s,j) => s+j.profit, 0);
+
+    // store result for save
+    window.lastResult = { scheduled, skipped, totalProfit, maxDeadline, slots };
+    // also expose to module scope
+    if (window._firebaseLoaded) window._firebaseLoaded.lastResult = window.lastResult;
+
+    // render result stats
+    document.getElementById('r-profit').textContent = '₹' + totalProfit.toLocaleString();
+    document.getElementById('r-scheduled').textContent = scheduled.length;
+    document.getElementById('r-skipped').textContent = skipped.length;
+    document.getElementById('save-profit-preview').textContent = '₹' + totalProfit.toLocaleString() + ' profit';
+
+    // timeline
+    document.getElementById('result-timeline').innerHTML = slots.map((job,i) => job
+      ? `<div class="tslot filled"><div class="t-time">T${i+1}</div><div class="t-job">${job.name.length>9?job.name.slice(0,8)+'…':job.name}</div><div class="t-profit-sm">₹${job.profit.toLocaleString()}</div></div>`
+      : `<div class="tslot empty"><div class="t-time">T${i+1}</div><div class="t-job">idle</div></div>`
+    ).join('');
+
+    // steps
+    document.getElementById('result-steps').innerHTML = steps.map((s,i) => `
+      <div class="step-item">
+        <div class="step-dot ${s.type}">${i+1}</div>
+        <div>${s.text}</div>
+      </div>`).join('');
+
+    // reset save button
+    const btn = document.getElementById('btn-save');
+    btn.disabled = false;
+    btn.textContent = '💾 Save to Firebase';
+
+    document.getElementById('result-box').classList.add('show');
+    document.getElementById('result-box').scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  // patch saveSchedule to use window.lastResult
+  const _origSave = window.saveSchedule;
+  window.saveSchedule = function() {
+    if (window._firebaseLoaded) window._firebaseLoaded.lastResult = window.lastResult;
+    if (_origSave) _origSave();
+  };
+</script>
+
+</body>
+</html>
