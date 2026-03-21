@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobMax — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f0a; --surface: #141810; --surface2: #1c2118;
+    --border: #2a3326; --accent: #7ef56a; --accent2: #f5e96a;
+    --accent3: #6ab8f5; --text: #e8f0e4; --muted: #6b7c65;
+    --danger: #f56a6a; --warning: #f5a623; --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* LOGIN GATE */
+  .login-gate {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .login-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 40px; width: 100%; max-width: 380px; animation: fadeUp 0.4s ease;
+  }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+  .admin-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(245,166,35,0.1); border: 1px solid rgba(245,166,35,0.3);
+    color: var(--warning); font-size: 11px; font-family: 'JetBrains Mono', monospace;
+    padding: 4px 12px; border-radius: 20px; margin-bottom: 20px;
+  }
+  .login-title { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+  .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 14px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 14px; outline: none; transition: border-color 0.15s; }
+  .field input:focus { border-color: var(--warning); }
+  .field input::placeholder { color: var(--muted); }
+  .btn-admin-login { width: 100%; padding: 13px; background: var(--warning); color: #0c0f0a; border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 800; cursor: pointer; transition: all 0.2s; margin-top: 4px; }
+  .btn-admin-login:hover { background: #ffbf4d; transform: translateY(-1px); }
+  .err-msg { background: rgba(245,106,106,0.08); border: 1px solid rgba(245,106,106,0.25); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--danger); margin-bottom: 14px; display: none; }
+  .err-msg.show { display: block; }
+
+  /* TOPBAR */
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 32px; border-bottom: 1px solid var(--border); background: rgba(12,15,10,0.95); position: sticky; top: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 32px; height: 32px; background: var(--warning); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .logo-text { font-size: 17px; font-weight: 800; }
+  .logo-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--warning); background: rgba(245,166,35,0.1); border: 1px solid rgba(245,166,35,0.2); padding: 3px 8px; border-radius: 20px; margin-left: 6px; }
+  .topbar-right { display: flex; gap: 10px; align-items: center; }
+  .btn { padding: 8px 16px; border-radius: 8px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+  .btn-danger { background: rgba(245,106,106,0.1); color: var(--danger); border: 1px solid rgba(245,106,106,0.2); }
+  .btn-danger:hover { background: rgba(245,106,106,0.2); }
+
+  /* TABS */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 32px; background: var(--surface); }
+  .tab { padding: 13px 18px; font-size: 14px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.15s; margin-bottom: -1px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--warning); border-bottom-color: var(--warning); }
+
+  .content { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeUp 0.25s ease; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 32px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+  .stat-card.warn { border-color: rgba(245,166,35,0.3); background: rgba(245,166,35,0.04); }
+  .stat-card.green { border-color: rgba(126,245,106,0.3); background: rgba(126,245,106,0.04); }
+  .s-label { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .s-val { font-size: 24px; font-weight: 800; }
+  .s-val.amber { color: var(--warning); }
+  .s-val.green { color: var(--accent); }
+  .s-val.blue { color: var(--accent3); }
+
+  /* SECTION */
+  .section-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
+  .panel-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .panel-title { font-weight: 700; font-size: 14px; }
+  .count-badge { font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 4px 10px; border-radius: 20px; }
+  .count-badge.amber { color: var(--warning); background: rgba(245,166,35,0.1); }
+  .count-badge.green { color: var(--accent); background: rgba(126,245,106,0.1); }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--surface2); }
+  th { padding: 9px 16px; text-align: left; font-size: 10px; font-family: 'JetBrains Mono', monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
+  td { padding: 11px 16px; font-size: 13px; border-top: 1px solid var(--border); }
+  tbody tr:hover { background: var(--surface2); }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .profit-cell { font-family: 'JetBrains Mono', monospace; color: var(--accent2); font-weight: 500; }
+  .empty-row td { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+  /* BADGES */
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+  .badge-green { background: rgba(126,245,106,0.1); border: 1px solid rgba(126,245,106,0.2); color: var(--accent); }
+  .badge-amber { background: rgba(245,166,35,0.1); border: 1px solid rgba(245,166,35,0.2); color: var(--warning); }
+  .badge-blue { background: rgba(106,184,245,0.1); border: 1px solid rgba(106,184,245,0.2); color: var(--accent3); }
+  .badge-red { background: rgba(245,106,106,0.1); border: 1px solid rgba(245,106,106,0.2); color: var(--danger); }
+
+  .btn-sm { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-family: 'Syne', sans-serif; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-sm-danger { background: rgba(245,106,106,0.1); color: var(--danger); border: 1px solid rgba(245,106,106,0.2); }
+  .btn-sm-danger:hover { background: rgba(245,106,106,0.2); }
+  .btn-sm-view { background: rgba(106,184,245,0.1); color: var(--accent3); border: 1px solid rgba(106,184,245,0.2); }
+  .btn-sm-view:hover { background: rgba(106,184,245,0.2); }
+
+  /* ACTIVITY FEED */
+  .activity-item { display: flex; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border); align-items: flex-start; }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .activity-dot.green { background: var(--accent); }
+  .activity-dot.amber { background: var(--warning); }
+  .activity-dot.blue { background: var(--accent3); }
+  .activity-text { font-size: 13px; color: var(--text); flex: 1; }
+  .activity-time { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+
+  /* SEARCH */
+  .search-bar { display: flex; gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+  .search-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; outline: none; flex: 1; transition: border-color 0.15s; }
+  .search-input:focus { border-color: var(--warning); }
+  .search-input::placeholder { color: var(--muted); }
+
+  .toast { position: fixed; bottom: 24px; right: 24px; z-index: 9999; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; font-weight: 600; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: rgba(126,245,106,0.4); color: var(--accent); }
+  .toast.error { border-color: rgba(245,106,106,0.4); color: var(--danger); }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--warning); border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-state { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+  @media(max-width:700px) {
+    .topbar { padding: 12px 16px; }
+    .tabs { padding: 0 16px; }
+    .content { padding: 20px 12px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN GATE ── -->
+<div id="login-gate" class="login-gate">
+  <div class="login-card">
+    <div class="admin-badge">⚙️ Admin Access Only</div>
+    <div class="login-title">Admin Panel</div>
+    <div class="login-sub">JobMax platform management</div>
+    <div class="err-msg" id="err-msg"></div>
+    <div class="field">
+      <label>Admin Email</label>
+      <input type="email" id="admin-email" placeholder="admin@jobmax.com" />
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="admin-password" placeholder="••••••••" />
+    </div>
+    <button class="btn-admin-login" onclick="adminLogin()">Access Admin Panel →</button>
+  </div>
+</div>
+
+<!-- ── ADMIN PANEL ── -->
+<div id="admin-panel" style="display:none;">
+
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-icon">⚙️</div>
+      <div class="logo-text">JobMax</div>
+      <div class="logo-badge">Admin Panel</div>
+    </div>
+    <div class="topbar-right">
+      <span style="font-size:13px;color:var(--muted);" id="admin-email-display"></span>
+      <button class="btn btn-secondary" onclick="window.location.href='/dashboard'">← Dashboard</button>
+      <button class="btn btn-danger" onclick="adminLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('overview',this)">📊 Overview</div>
+    <div class="tab" onclick="switchTab('users',this)">👥 Users</div>
+    <div class="tab" onclick="switchTab('schedules',this)">📋 Schedules</div>
+    <div class="tab" onclick="switchTab('activity',this)">⚡ Activity</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── OVERVIEW ── -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="stats-grid">
+        <div class="stat-card warn">
+          <div class="s-label">Total Users</div>
+          <div class="s-val amber" id="stat-users">—</div>
+        </div>
+        <div class="stat-card green">
+          <div class="s-label">Total Profit</div>
+          <div class="s-val green" id="stat-profit">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Total Schedules</div>
+          <div class="s-val blue" id="stat-schedules">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Jobs Completed</div>
+          <div class="s-val" id="stat-jobs">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Avg Profit/User</div>
+          <div class="s-val amber" id="stat-avg">—</div>
+        </div>
+      </div>
+
+      <!-- Worker type breakdown -->
+      <div class="section-label">Worker Type Breakdown</div>
+      <div class="panel-box">
+        <div class="panel-head">
+          <div class="panel-title">Workers by Type</div>
+        </div>
+        <div id="worker-breakdown" style="padding:16px 20px;display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+          <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:8px;">
+            <div style="font-size:24px;">👷</div>
+            <div style="font-size:18px;font-weight:800;margin:4px 0;" id="count-labour">—</div>
+            <div style="font-size:11px;color:var(--muted);">Labour</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:8px;">
+            <div style="font-size:24px;">🪚</div>
+            <div style="font-size:18px;font-weight:800;margin:4px 0;" id="count-carpenter">—</div>
+            <div style="font-size:11px;color:var(--muted);">Carpenter</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:8px;">
+            <div style="font-size:24px;">🔧</div>
+            <div style="font-size:18px;font-weight:800;margin:4px 0;" id="count-plumber">—</div>
+            <div style="font-size:11px;color:var(--muted);">Plumber</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:8px;">
+            <div style="font-size:24px;">⚡</div>
+            <div style="font-size:18px;font-weight:800;margin:4px 0;" id="count-electrician">—</div>
+            <div style="font-size:11px;color:var(--muted);">Electrician</div>
+          </div>
+          <div style="text-align:center;padding:16px;background:var(--surface2);border-radius:8px;">
+            <div style="font-size:24px;">🎨</div>
+            <div style="font-size:18px;font-weight:800;margin:4px 0;" id="count-painter">—</div>
+            <div style="font-size:11px;color:var(--muted);">Painter</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── USERS ── -->
+    <div class="tab-panel" id="tab-users">
+      <div class="panel-box">
+        <div class="panel-head">
+          <div class="panel-title">All Users</div>
+          <div class="count-badge amber" id="users-count">— users</div>
+        </div>
+        <div class="search-bar">
+          <input type="text" class="search-input" placeholder="Search by name or email..." oninput="filterUsers(this.value)" />
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Worker Type</th>
+              <th>Schedules</th>
+              <th>Total Profit</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="7" class="empty-row"><span class="spinner"></span> Loading users...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── SCHEDULES ── -->
+    <div class="tab-panel" id="tab-schedules">
+      <div class="panel-box">
+        <div class="panel-head">
+          <div class="panel-title">All Schedules</div>
+          <div class="count-badge green" id="schedules-count">— schedules</div>
+        </div>
+        <div class="search-bar">
+          <input type="text" class="search-input" placeholder="Search by worker type or profit..." oninput="filterSchedules(this.value)" />
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Worker Type</th>
+              <th>Total Profit</th>
+              <th>Scheduled</th>
+              <th>Skipped</th>
+              <th>Time Slots</th>
+            </tr>
+          </thead>
+          <tbody id="schedules-tbody">
+            <tr><td colspan="6" class="empty-row"><span class="spinner"></span> Loading schedules...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── ACTIVITY ── -->
+    <div class="tab-panel" id="tab-activity">
+      <div class="section-label">Recent Activity</div>
+      <div class="panel-box">
+        <div class="panel-head">
+          <div class="panel-title">Platform Activity Feed</div>
+          <div class="count-badge blue" id="activity-count">— events</div>
+        </div>
+        <div id="activity-feed">
+          <div class="loading-state"><span class="spinner"></span> Loading activity...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, getDocs, doc, deleteDoc, orderBy, query, limit }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDom0HM4xQeiY300EqCvhuwF5q4pZfLW10",
+    authDomain: "jobmax-scheduler.firebaseapp.com",
+    databaseURL: "https://jobmax-scheduler-default-rtdb.firebaseio.com",
+    projectId: "jobmax-scheduler",
+    storageBucket: "jobmax-scheduler.firebasestorage.app",
+    messagingSenderId: "318072359776",
+    appId: "1:318072359776:web:ae2d9986bf2c5233fd2c05",
+    measurementId: "G-QB881KNNZE"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ── ADMIN EMAILS — add your admin email here ──
+  const ADMIN_EMAILS = ["kumarmohan15366@gmail.com"];
+
+  let allUsers = [];
+  let allSchedules = [];
+
+  window.adminLogin = async () => {
+    const email = document.getElementById('admin-email').value.trim();
+    const password = document.getElementById('admin-password').value;
+    const errEl = document.getElementById('err-msg');
+    errEl.classList.remove('show');
+
+    if (!ADMIN_EMAILS.includes(email)) {
+      errEl.textContent = 'Access denied. You are not an admin.';
+      errEl.classList.add('show'); return;
+    }
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch(e) {
+      errEl.textContent = 'Invalid credentials.';
+      errEl.classList.add('show');
+    }
+  };
+
+  window.adminLogout = async () => {
+    await signOut(auth);
+    document.getElementById('admin-panel').style.display = 'none';
+    document.getElementById('login-gate').style.display = 'flex';
+  };
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user && ADMIN_EMAILS.includes(user.email)) {
+      document.getElementById('login-gate').style.display = 'none';
+      document.getElementById('admin-panel').style.display = 'block';
+      document.getElementById('admin-email-display').textContent = user.email;
+      await loadAllData();
+    }
+  });
+
+  async function loadAllData() {
+    await Promise.all([loadUsers(), loadSchedules()]);
+    updateOverview();
+    loadActivityFeed();
+  }
+
+  async function loadUsers() {
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      allUsers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderUsers(allUsers);
+      document.getElementById('users-count').textContent = allUsers.length + ' users';
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  async function loadSchedules() {
+    try {
+      const q = query(collection(db, 'schedules'), orderBy('createdAt', 'desc'), limit(50));
+      const snap = await getDocs(q);
+      allSchedules = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderSchedules(allSchedules);
+      document.getElementById('schedules-count').textContent = allSchedules.length + ' schedules';
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  function updateOverview() {
+    const totalProfit = allUsers.reduce((s, u) => s + (u.totalProfit || 0), 0);
+    const totalSchedules = allUsers.reduce((s, u) => s + (u.schedulesRun || 0), 0);
+    const totalJobs = allUsers.reduce((s, u) => s + (u.jobsCompleted || 0), 0);
+    const avgProfit = allUsers.length > 0 ? Math.round(totalProfit / allUsers.length) : 0;
+
+    document.getElementById('stat-users').textContent = allUsers.length;
+    document.getElementById('stat-profit').textContent = '₹' + totalProfit.toLocaleString();
+    document.getElementById('stat-schedules').textContent = totalSchedules;
+    document.getElementById('stat-jobs').textContent = totalJobs;
+    document.getElementById('stat-avg').textContent = '₹' + avgProfit.toLocaleString();
+
+    const types = { Labour: 0, Carpenter: 0, Plumber: 0, Electrician: 0, Painter: 0 };
+    allUsers.forEach(u => { if (types[u.workerType] !== undefined) types[u.workerType]++; });
+    document.getElementById('count-labour').textContent = types.Labour;
+    document.getElementById('count-carpenter').textContent = types.Carpenter;
+    document.getElementById('count-plumber').textContent = types.Plumber;
+    document.getElementById('count-electrician').textContent = types.Electrician;
+    document.getElementById('count-painter').textContent = types.Painter;
+  }
+
+  function renderUsers(users) {
+    const tbody = document.getElementById('users-tbody');
+    if (!users.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="empty-row">No users found.</td></tr>'; return;
+    }
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td style="font-weight:600;">${u.name || '—'}</td>
+        <td class="mono" style="font-size:12px;color:var(--muted);">${u.email || '—'}</td>
+        <td><span class="badge badge-green">${u.workerType || '—'}</span></td>
+        <td class="mono">${u.schedulesRun || 0}</td>
+        <td class="profit-cell">₹${(u.totalProfit || 0).toLocaleString()}</td>
+        <td class="mono" style="font-size:11px;color:var(--muted);">${u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN') : '—'}</td>
+        <td>
+          <button class="btn-sm btn-sm-danger" onclick="deleteUser('${u.id}')">✕ Remove</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function renderSchedules(schedules) {
+    const tbody = document.getElementById('schedules-tbody');
+    if (!schedules.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-row">No schedules found.</td></tr>'; return;
+    }
+    tbody.innerHTML = schedules.map(s => `
+      <tr>
+        <td class="mono" style="font-size:11px;color:var(--muted);">${s.createdAt ? new Date(s.createdAt).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}) : '—'}</td>
+        <td><span class="badge badge-amber">${s.workerType || '—'}</span></td>
+        <td class="profit-cell">₹${(s.totalProfit || 0).toLocaleString()}</td>
+        <td class="mono">${(s.scheduledJobs || []).length}</td>
+        <td class="mono" style="color:var(--danger);">${(s.skippedJobs || []).length}</td>
+        <td class="mono">${s.totalSlots || '—'}</td>
+      </tr>`).join('');
+  }
+
+  function loadActivityFeed() {
+    const feed = document.getElementById('activity-feed');
+    const activities = [];
+    allSchedules.slice(0, 15).forEach(s => {
+      activities.push({ type: 'green', text: `New schedule saved — ${s.workerType} worker earned ₹${s.totalProfit?.toLocaleString()}`, time: s.createdAt ? new Date(s.createdAt).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) : '' });
+    });
+    allUsers.slice(0, 5).forEach(u => {
+      activities.push({ type: 'blue', text: `New user registered — ${u.name} (${u.workerType})`, time: u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN') : '' });
+    });
+    activities.sort((a, b) => b.time - a.time);
+    if (!activities.length) { feed.innerHTML = '<div class="loading-state">No activity yet.</div>'; return; }
+    document.getElementById('activity-count').textContent = activities.length + ' events';
+    feed.innerHTML = activities.map(a => `
+      <div class="activity-item">
+        <div class="activity-dot ${a.type}"></div>
+        <div class="activity-text">${a.text}</div>
+        <div class="activity-time">${a.time}</div>
+      </div>`).join('');
+  }
+
+  window.deleteUser = async (uid) => {
+    if (!confirm('Remove this user from the platform?')) return;
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+      showToast('✓ User removed', 'success');
+      await loadUsers();
+      updateOverview();
+    } catch(e) {
+      showToast('Failed to remove user', 'error');
+    }
+  };
+
+  window.filterUsers = (q) => {
+    const filtered = allUsers.filter(u =>
+      (u.name || '').toLowerCase().includes(q.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(q.toLowerCase())
+    );
+    renderUsers(filtered);
+  };
+
+  window.filterSchedules = (q) => {
+    const filtered = allSchedules.filter(s =>
+      (s.workerType || '').toLowerCase().includes(q.toLowerCase()) ||
+      String(s.totalProfit || '').includes(q)
+    );
+    renderSchedules(filtered);
+  };
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.className = 'toast', 3000);
+  }
+</script>
+
+<script>
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+</script>
+
+</body>
+</html>

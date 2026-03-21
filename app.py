@@ -73,6 +73,11 @@ def register():
 def dashboard():
     return render_template("dashboard.html")
 
+@app.route("/admin")
+def admin():
+    return render_template("admin.html")
+
+
 # ── API Routes ────────────────────────────────────────────────
 
 @app.route("/api/session-login", methods=["POST"])
@@ -253,4 +258,4 @@ if __name__ == "__main__":
     print("=" * 45)
     print("  Running at: http://localhost:5000")
     print("  Press Ctrl+C to stop\n")
-   app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
