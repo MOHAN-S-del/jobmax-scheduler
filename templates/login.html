@@ -267,12 +267,12 @@
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyDom0HM4xQeiY300EqCvhuwF5q4pZfLW10",
-    authDomain: "jobmax-scheduler.firebaseapp.com",
-    projectId: "jobmax-scheduler",
-    storageBucket: "jobmax-scheduler.firebasestorage.app",
-    messagingSenderId: "318072359776",
-    appId: "1:318072359776:web:ae2d9986bf2c5233fd2c05"
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -292,7 +292,7 @@
     }
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      window.location.href = "/dashboard";
+      window.location.href = '/dashboard';
     } catch (e) {
       errEl.textContent = 'Invalid email or password. Please try again.';
       errEl.classList.add('show');
@@ -303,7 +303,7 @@
     const errEl = document.getElementById('error-msg');
     try {
       await signInWithPopup(auth, provider);
-      window.location.href = "/dashboard";
+      window.location.href = '/dashboard';
     } catch (e) {
       errEl.textContent = 'Google sign-in failed. Please try again.';
       errEl.classList.add('show');
