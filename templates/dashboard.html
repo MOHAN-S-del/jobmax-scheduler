@@ -7,20 +7,62 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0c0f0a;
-    --surface: #141810;
-    --surface2: #1c2118;
-    --border: #2a3326;
-    --accent: #7ef56a;
-    --accent2: #f5e96a;
-    --accent3: #6ab8f5;
-    --text: #e8f0e4;
-    --muted: #6b7c65;
-    --danger: #f56a6a;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --border: #e2e8f0;
+    --accent: #3b82f6;
+    --accent2: #06b6d4;
+    --accent3: #8b5cf6;
+    --text: #1e293b;
+    --muted: #64748b;
+    --danger: #ef4444;
+    --success: #10b981;
+    --warning: #f59e0b;
     --radius: 12px;
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  body {
+    font-family: 'Syne', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .logo {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .tagline {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.1rem;
+    font-weight: 400;
+  }
 
   /* ── TOPBAR ── */
   .topbar {
@@ -88,43 +130,93 @@
 
   /* ── SECTION ── */
   .section-label { font-family: 'JetBrains Mono',monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
-  .panel-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 24px; }
+  .panel-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .panel-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
   .panel-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); }
   .panel-title { font-weight: 700; font-size: 14px; }
 
   /* ── FORM ── */
-  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end; padding: 16px 20px; }
-  .form-field label { display: block; font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono',monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
-  .form-field input {
-    width: 100%; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 10px 12px; color: var(--text);
-    font-family: 'JetBrains Mono',monospace; font-size: 13px; outline: none; transition: border-color 0.15s;
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 12px; align-items: end; padding: 20px 24px; background: var(--surface2); border-radius: 0 0 var(--radius) var(--radius); }
+  .form-field label { display: block; font-size: 11px; color: var(--text); font-family: 'JetBrains Mono',monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; font-weight: 600; }
+  .form-field input, .form-field select {
+    width: 100%; background: white; border: 2px solid var(--border);
+    border-radius: 8px; padding: 12px 14px; color: var(--text);
+    font-family: 'JetBrains Mono',monospace; font-size: 13px; outline: none; transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   }
-  .form-field input:focus { border-color: var(--accent); }
+  .form-field input:focus, .form-field select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+  }
   .form-field input::placeholder { color: var(--muted); }
 
   .btn { padding: 10px 18px; border-radius: 8px; font-family: 'Syne',sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; border: none; transition: all 0.15s; }
-  .btn-primary { background: var(--accent); color: #0c0f0a; }
-  .btn-primary:hover { background: #9dff8a; }
-  .btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--border); }
-  .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
-  .btn-run { background: var(--accent); color: #0c0f0a; padding: 12px 32px; font-size: 14px; font-weight: 800; }
-  .btn-run:hover { background: #9dff8a; transform: translateY(-1px); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent3) 100%);
+    color: white;
+    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.3);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.4);
+  }
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover {
+    background: var(--text);
+    color: white;
+    transform: translateY(-1px);
+  }
+  .btn-run {
+    background: linear-gradient(135deg, var(--success) 0%, var(--accent) 100%);
+    color: white;
+    padding: 12px 32px;
+    font-size: 14px;
+    font-weight: 800;
+    box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.3);
+    animation: pulse 2s infinite;
+  }
+  .btn-run:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px 0 rgba(16, 185, 129, 0.4);
+    animation: none;
+  }
   .btn-sm-danger { background: transparent; color: var(--danger); border: none; font-size: 12px; cursor: pointer; padding: 4px 8px; font-family: 'Syne',sans-serif; font-weight: 600; }
   .btn-sm-danger:hover { text-decoration: underline; }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
 
   .form-actions { display: flex; gap: 10px; padding: 0 20px 16px; }
 
   /* ── TABLE ── */
-  table { width: 100%; border-collapse: collapse; }
-  thead tr { background: var(--surface2); }
-  th { padding: 9px 16px; text-align: left; font-size: 10px; font-family: 'JetBrains Mono',monospace; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 500; }
-  td { padding: 11px 16px; font-size: 13px; border-top: 1px solid var(--border); }
-  tbody tr:hover { background: var(--surface2); }
+  table { width: 100%; border-collapse: collapse; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  thead tr { background: linear-gradient(135deg, var(--accent) 0%, var(--accent3) 100%); color: white; }
+  th { padding: 12px 16px; text-align: left; font-size: 11px; font-family: 'JetBrains Mono',monospace; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+  td { padding: 14px 16px; font-size: 13px; border-bottom: 1px solid var(--border); transition: background-color 0.2s ease; }
+  tbody tr:hover { background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%); transform: scale(1.01); }
   .tc-mono { font-family: 'JetBrains Mono',monospace; }
-  .tc-profit { font-family: 'JetBrains Mono',monospace; color: var(--accent2); font-weight: 500; }
-  .tc-deadline { font-family: 'JetBrains Mono',monospace; color: var(--accent3); }
-  .empty-row td { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; }
+  .tc-profit { font-family: 'JetBrains Mono',monospace; color: var(--success); font-weight: 600; }
+  .tc-deadline { font-family: 'JetBrains Mono',monospace; color: var(--warning); font-weight: 500; }
+  .empty-row td { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; background: var(--surface2); }
 
   /* ── SCHEDULE RESULT ── */
   .result-box { display: none; }
@@ -208,12 +300,11 @@
   <div class="logo">
     <div class="logo-icon">
       <svg viewBox="0 0 20 20" fill="none">
-        <rect x="2" y="4" width="4" height="12" rx="1" fill="#0c0f0a"/>
-        <rect x="8" y="7" width="4" height="9" rx="1" fill="#0c0f0a"/>
-        <rect x="14" y="2" width="4" height="14" rx="1" fill="#0c0f0a"/>
+        <path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z" stroke="#0c0f0a" stroke-width="2" fill="none"/>
+        <circle cx="10" cy="12" r="2" fill="#0c0f0a"/>
       </svg>
     </div>
-    <div class="logo-text">JobMax</div>
+    <div class="logo-text">FreelanceMax</div>
   </div>
   <div class="topbar-right">
     <div class="user-chip">
@@ -229,9 +320,9 @@
 
 <!-- TABS -->
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('scheduler',this)">⚡ Scheduler</div>
-  <div class="tab" onclick="switchTab('history',this)">📋 History</div>
-  <div class="tab" onclick="switchTab('profile',this)">👤 Profile</div>
+  <div class="tab active" onclick="switchTab('scheduler',this)">⚡ Project Scheduler</div>
+  <div class="tab" onclick="switchTab('history',this)">📋 Project History</div>
+  <div class="tab" onclick="switchTab('profile',this)">👤 Freelancer Profile</div>
 </div>
 
 <!-- CONTENT -->
@@ -243,89 +334,198 @@
     <!-- Summary stats -->
     <div class="stats-row">
       <div class="stat-card highlight">
-        <div class="s-label">Total Profit Earned</div>
+        <div class="s-label">Total Earnings</div>
         <div class="s-val green" id="stat-total-profit">₹0</div>
       </div>
       <div class="stat-card">
-        <div class="s-label">Schedules Run</div>
+        <div class="s-label">Projects Scheduled</div>
         <div class="s-val" id="stat-schedules">0</div>
       </div>
       <div class="stat-card">
-        <div class="s-label">Jobs Completed</div>
+        <div class="s-label">Projects Completed</div>
         <div class="s-val" id="stat-completed">0</div>
       </div>
       <div class="stat-card">
-        <div class="s-label">Worker Type</div>
-        <div class="s-val" style="font-size:18px;" id="stat-worker">—</div>
+        <div class="s-label">Total Earnings</div>
+        <div class="s-val" style="font-size:18px;" id="stat-earnings">₹0</div>
       </div>
     </div>
 
-    <!-- Add Jobs -->
-    <div class="section-label">Add Jobs</div>
+    <!-- Add Projects -->
+    <div class="section-label">Add Projects</div>
     <div class="panel-box">
       <div class="panel-head">
-        <div class="panel-title">Pending Jobs</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);background:rgba(126,245,106,0.1);padding:4px 10px;border-radius:20px;" id="job-count">0 jobs</div>
+        <div class="panel-title">Pending Projects</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent);background:rgba(126,245,106,0.1);padding:4px 10px;border-radius:20px;" id="job-count">0 projects</div>
       </div>
       <div class="form-grid">
         <div class="form-field">
-          <label>Job Name</label>
-          <input type="text" id="inp-name" placeholder="e.g. Fix Pipe A" />
+          <label>Job Type</label>
+          <select id="inp-job-type" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: 'JetBrains Mono',monospace; font-size: 13px; outline: none;">
+            <option value="">Select job type...</option>
+            <option value="Web Development">💻 Web Development</option>
+            <option value="Graphic Design">🎨 Graphic Design</option>
+            <option value="Content Writing">✍️ Content Writing</option>
+            <option value="Video Editing">🎬 Video Editing</option>
+            <option value="Digital Marketing">📈 Digital Marketing</option>
+            <option value="Mobile App Development">📱 Mobile App Development</option>
+            <option value="UI/UX Design">🎨 UI/UX Design</option>
+            <option value="SEO Optimization">🔍 SEO Optimization</option>
+            <option value="Social Media Management">📱 Social Media Management</option>
+            <option value="Data Entry">📊 Data Entry</option>
+            <option value="Translation">🌍 Translation</option>
+            <option value="Virtual Assistance">🤖 Virtual Assistance</option>
+            <option value="Photography">📸 Photography</option>
+            <option value="Consulting">💼 Consulting</option>
+            <option value="Other">🔧 Other</option>
+          </select>
         </div>
         <div class="form-field">
-          <label>Deadline (units)</label>
-          <input type="number" id="inp-deadline" placeholder="e.g. 3" min="1" />
+          <label>Project Name</label>
+          <input type="text" id="inp-name" placeholder="e.g. E-commerce Website Redesign" />
         </div>
         <div class="form-field">
-          <label>Profit (₹)</label>
-          <input type="number" id="inp-profit" placeholder="e.g. 500" min="1" />
+          <label>Deadline Date</label>
+          <input type="date" id="inp-date" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: 'JetBrains Mono',monospace; font-size: 13px; outline: none;" />
         </div>
-        <div><button class="btn btn-primary" onclick="addJob()">+ Add</button></div>
+        <div class="form-field">
+          <label>Deadline Time</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="inp-hour" style="flex: 1; background: white; border: 2px solid var(--border); border-radius: 8px; padding: 12px 8px; color: var(--text); font-family: 'JetBrains Mono',monospace; font-size: 13px; outline: none; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+              <option value="">Hour</option>
+              <option value="1">01</option>
+              <option value="2">02</option>
+              <option value="3">03</option>
+              <option value="4">04</option>
+              <option value="5">05</option>
+              <option value="6">06</option>
+              <option value="7">07</option>
+              <option value="8">08</option>
+              <option value="9">09</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+            </select>
+            <span style="color: var(--muted);">:</span>
+            <select id="inp-minute" style="flex: 1; background: white; border: 2px solid var(--border); border-radius: 8px; padding: 12px 8px; color: var(--text); font-family: 'JetBrains Mono',monospace; font-size: 13px; outline: none; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+              <option value="">Min</option>
+              <option value="0">00</option>
+              <option value="1">01</option>
+              <option value="2">02</option>
+              <option value="3">03</option>
+              <option value="4">04</option>
+              <option value="5">05</option>
+              <option value="6">06</option>
+              <option value="7">07</option>
+              <option value="8">08</option>
+              <option value="9">09</option>
+              <option value="10">10</option>
+              <option value="11">11</option>
+              <option value="12">12</option>
+              <option value="13">13</option>
+              <option value="14">14</option>
+              <option value="15">15</option>
+              <option value="16">16</option>
+              <option value="17">17</option>
+              <option value="18">18</option>
+              <option value="19">19</option>
+              <option value="20">20</option>
+              <option value="21">21</option>
+              <option value="22">22</option>
+              <option value="23">23</option>
+              <option value="24">24</option>
+              <option value="25">25</option>
+              <option value="26">26</option>
+              <option value="27">27</option>
+              <option value="28">28</option>
+              <option value="29">29</option>
+              <option value="30">30</option>
+              <option value="31">31</option>
+              <option value="32">32</option>
+              <option value="33">33</option>
+              <option value="34">34</option>
+              <option value="35">35</option>
+              <option value="36">36</option>
+              <option value="37">37</option>
+              <option value="38">38</option>
+              <option value="39">39</option>
+              <option value="40">40</option>
+              <option value="41">41</option>
+              <option value="42">42</option>
+              <option value="43">43</option>
+              <option value="44">44</option>
+              <option value="45">45</option>
+              <option value="46">46</option>
+              <option value="47">47</option>
+              <option value="48">48</option>
+              <option value="49">49</option>
+              <option value="50">50</option>
+              <option value="51">51</option>
+              <option value="52">52</option>
+              <option value="53">53</option>
+              <option value="54">54</option>
+              <option value="55">55</option>
+              <option value="56">56</option>
+              <option value="57">57</option>
+              <option value="58">58</option>
+              <option value="59">59</option>
+            </select>
+            <select id="inp-ampm" style="flex: 1; background: white; border: 2px solid var(--border); border-radius: 8px; padding: 12px 8px; color: var(--text); font-family: 'JetBrains Mono',monospace; font-size: 13px; outline: none; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label>Budget (₹)</label>
+          <input type="number" id="inp-profit" placeholder="e.g. 5000" min="100" />
+        </div>
+        <div><button class="btn btn-primary" onclick="addJob()">+ Add Project</button></div>
       </div>
       <div class="form-actions">
-        <button class="btn btn-secondary" onclick="loadSample()">Load sample</button>
+        <button class="btn btn-secondary" onclick="loadSample()">Load sample projects</button>
         <button class="btn btn-secondary" onclick="clearJobs()">Clear all</button>
       </div>
       <table>
         <thead>
-          <tr><th>#</th><th>Job Name</th><th>Deadline</th><th>Profit</th><th></th></tr>
+          <tr><th>#</th><th>Job Type</th><th>Project Name</th><th>Deadline</th><th>Budget</th><th></th></tr>
         </thead>
         <tbody id="job-tbody">
-          <tr class="empty-row"><td colspan="5">No jobs yet. Add one above or load sample data.</td></tr>
+          <tr class="empty-row"><td colspan="6">No projects yet. Add one above or load sample freelancer jobs.</td></tr>
         </tbody>
       </table>
     </div>
 
     <!-- Run Button -->
     <div style="text-align:center;margin-bottom:32px;">
-      <button class="btn btn-run" onclick="runScheduler()">▶ Run Greedy Scheduler</button>
+      <button class="btn btn-run" onclick="runScheduler()">🚀 Optimize My Schedule</button>
     </div>
 
     <!-- Result -->
     <div class="result-box" id="result-box">
-      <div class="section-label">Result</div>
+      <div class="section-label">Optimization Result</div>
       <div class="panel-box">
         <div class="panel-head">
-          <div class="panel-title">Schedule Output</div>
-          <div style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;background:rgba(126,245,106,0.1);padding:4px 10px;border-radius:20px;">✓ Optimal</div>
+          <div class="panel-title">Best Project Schedule</div>
+          <div style="font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;background:rgba(126,245,106,0.1);padding:4px 10px;border-radius:20px;">🎯 Maximum Earnings</div>
         </div>
 
         <div class="result-stats">
-          <div class="rs-card"><div class="rs-label">Max Profit</div><div class="rs-val green" id="r-profit">₹0</div></div>
-          <div class="rs-card"><div class="rs-label">Scheduled</div><div class="rs-val" id="r-scheduled">0</div></div>
-          <div class="rs-card"><div class="rs-label">Skipped</div><div class="rs-val" id="r-skipped">0</div></div>
+          <div class="rs-card"><div class="rs-label">Max Earnings</div><div class="rs-val green" id="r-profit">₹0</div></div>
+          <div class="rs-card"><div class="rs-label">Projects Scheduled</div><div class="rs-val" id="r-scheduled">0</div></div>
+          <div class="rs-card"><div class="rs-label">Projects Skipped</div><div class="rs-val" id="r-skipped">0</div></div>
         </div>
 
         <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
-          <div class="section-label" style="margin-bottom:10px;">Timeline</div>
+          <div class="section-label" style="margin-bottom:10px;">Project Timeline</div>
           <div class="timeline" id="result-timeline"></div>
         </div>
 
         <div class="steps-list" id="result-steps"></div>
 
         <div class="save-strip">
-          <p>Save this schedule to your history? <span id="save-profit-preview"></span></p>
-          <button class="btn btn-primary" onclick="saveSchedule()" id="btn-save">💾 Save to Firebase</button>
+          <p>Save this optimized schedule? <span id="save-profit-preview"></span></p>
+          <button class="btn btn-primary" onclick="saveSchedule()" id="btn-save">💾 Save Schedule</button>
         </div>
       </div>
     </div>
@@ -372,12 +572,12 @@
   import { getFirestore, doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, updateDoc, increment }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // ── Replace with your Firebase config ──
+  // ── Firebase Config ──
   const firebaseConfig = {
     apiKey: "AIzaSyDom0HM4xQeiY300EqCvhuwF5q4pZfLW10",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    authDomain: "jobmax-scheduler.firebaseapp.com",
     projectId: "jobmax-scheduler",
-    storageBucket: "YOUR_PROJECT.appspot.com",
+    storageBucket: "jobmax-scheduler.appspot.com",
     messagingSenderId: "318072359776",
     appId: "1:318072359776:web:ae2d9986bf2c5233fd2c05"
   };
@@ -392,7 +592,16 @@
 
   // ── Auth guard ──
   onAuthStateChanged(auth, async (user) => {
-    if (!user) { window.location.href = 'login.html'; return; }
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+
+    currentUser = user;
+    await loadUserProfile();
+    renderProfile();
+      return;
+    }
     currentUser = user;
     await loadUserProfile(user.uid);
     loadHistory();
@@ -413,11 +622,12 @@
     const initials = (userProfile.name || 'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
     document.getElementById('user-avatar').textContent = initials;
     document.getElementById('user-name').textContent = userProfile.name || 'User';
-    document.getElementById('user-role').textContent = userProfile.workerType || 'Worker';
-    document.getElementById('stat-worker').textContent = userProfile.workerType || '—';
+    document.getElementById('user-role').textContent = userProfile.workerType || 'Freelancer';
     document.getElementById('stat-total-profit').textContent = '₹' + (userProfile.totalProfit || 0).toLocaleString();
     document.getElementById('stat-schedules').textContent = userProfile.schedulesRun || 0;
     document.getElementById('stat-completed').textContent = userProfile.jobsCompleted || 0;
+    document.getElementById('stat-earnings').textContent = '₹' + (userProfile.totalProfit || 0).toLocaleString();
+  }
 
     document.getElementById('profile-avatar').textContent = initials;
     document.getElementById('profile-name').textContent = userProfile.name || '—';
@@ -510,6 +720,9 @@
     setTimeout(() => t.className = 'toast', 3000);
   }
 
+  // Make showToast globally available for UI script
+  window.showToast = showToast;
+
   window._firebaseLoaded = { db, auth, currentUser: () => currentUser, showToast, loadHistory };
 </script>
 
@@ -518,27 +731,88 @@
   let jobs = [];
   let jobId = 1;
 
-  function switchTab(name, el) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('tab-' + name).classList.add('active');
-    if (name === 'history' && window._firebaseLoaded) window._firebaseLoaded.loadHistory();
+// Populate minute dropdown
+function populateMinuteDropdown() {
+  const minuteSelect = document.getElementById('inp-minute');
+  minuteSelect.innerHTML = '<option value="">Min</option>';
+  for (let i = 0; i < 60; i++) {
+    const option = document.createElement('option');
+    option.value = i;
+    option.textContent = String(i).padStart(2, '0');
+    minuteSelect.appendChild(option);
   }
+}
+
+// Populate hour dropdown
+function populateHourDropdown() {
+  const hourSelect = document.getElementById('inp-hour');
+  hourSelect.innerHTML = '<option value="">Hour</option>';
+  for (let i = 1; i <= 12; i++) {
+    const option = document.createElement('option');
+    option.value = i;
+    option.textContent = String(i).padStart(2, '0');
+    hourSelect.appendChild(option);
+  }
+}
+
+// Initialize dropdowns when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  populateHourDropdown();
+  populateMinuteDropdown();
+});
+
+function switchTab(name, el) {
 
   function addJob() {
+    const jobType = document.getElementById('inp-job-type').value;
     const name = document.getElementById('inp-name').value.trim();
-    const deadline = parseInt(document.getElementById('inp-deadline').value);
+    const date = document.getElementById('inp-date').value;
+    const hour = document.getElementById('inp-hour').value;
+    const minute = document.getElementById('inp-minute').value;
+    const ampm = document.getElementById('inp-ampm').value;
     const profit = parseInt(document.getElementById('inp-profit').value);
-    if (!name || !deadline || !profit || deadline < 1 || profit < 1) {
-      alert('Please fill in all fields with valid values.'); return;
+
+    if (!jobType || !name || !date || !hour || !minute || !profit || profit < 100) {
+      showToast('Please fill in all fields with valid values.', 'error');
+      return;
     }
-    jobs.push({ id: jobId++, name, deadline, profit });
+
+    // Calculate days until deadline
+    const deadlineDate = new Date(`${date}T${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')}:00`);
+    const today = new Date();
+    const daysUntil = Math.max(1, Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24)));
+
+    // Format display date
+    const displayDate = deadlineDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+
+    jobs.push({
+      id: jobId++,
+      jobType,
+      name,
+      deadline: daysUntil,
+      displayDate,
+      profit
+    });
+
+    // Clear form
+    document.getElementById('inp-job-type').value = '';
     document.getElementById('inp-name').value = '';
-    document.getElementById('inp-deadline').value = '';
+    document.getElementById('inp-date').value = '';
+    document.getElementById('inp-hour').value = '';
+    document.getElementById('inp-minute').value = '';
+    document.getElementById('inp-ampm').value = 'AM';
     document.getElementById('inp-profit').value = '';
+
     renderTable();
     document.getElementById('result-box').classList.remove('show');
+    showToast('✅ Project added successfully!', 'success');
   }
 
   function removeJob(id) {
@@ -552,81 +826,193 @@
   }
 
   function loadSample() {
-    jobs = [
-      { id: jobId++, name: 'Fix Water Pipe', deadline: 2, profit: 500 },
-      { id: jobId++, name: 'Build Cabinet', deadline: 1, profit: 300 },
-      { id: jobId++, name: 'Paint Wall', deadline: 3, profit: 400 },
-      { id: jobId++, name: 'Lay Foundation', deadline: 2, profit: 700 },
-      { id: jobId++, name: 'Wire Circuit', deadline: 3, profit: 600 },
-      { id: jobId++, name: 'Install Sink', deadline: 1, profit: 200 },
-    ];
-    renderTable();
+    // Load sample freelancer jobs from JSON file
+    fetch('/static/sample_jobs.json')
+      .then(response => response.json())
+      .then(sampleJobs => {
+        jobs = []; // Clear existing jobs
+        jobId = 1; // Reset job ID counter
+
+        sampleJobs.forEach(job => {
+          // Calculate days until deadline for display
+          const deadlineDate = new Date(job.deadline);
+          const today = new Date();
+          const daysUntil = Math.max(1, Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24)));
+
+          // Format display date
+          const displayDate = deadlineDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+
+          jobs.push({
+            id: jobId++,
+            jobType: job.job_type,
+            name: job.name,
+            deadline: daysUntil,
+            displayDate,
+            profit: job.profit
+          });
+        });
+
+        renderTable();
+        showToast('✅ Loaded 20 sample freelancer jobs!', 'success');
+      })
+      .catch(error => {
+        console.error('Error loading sample jobs:', error);
+        showToast('❌ Failed to load sample jobs', 'error');
+        // Fallback to basic sample jobs
+        const fallbackJobs = [
+          { name: 'E-commerce Website Redesign', jobType: 'Web Development', deadline: 7, profit: 2500 },
+          { name: 'iOS Fitness Tracking App', jobType: 'Mobile App Development', deadline: 12, profit: 3200 },
+          { name: 'Restaurant App Interface', jobType: 'UI/UX Design', deadline: 4, profit: 1800 },
+          { name: 'Portfolio Website', jobType: 'Web Development', deadline: 10, profit: 1200 },
+          { name: 'Android Chat Application', jobType: 'Mobile App Development', deadline: 17, profit: 2800 },
+        ];
+
+        jobs = [];
+        fallbackJobs.forEach(job => {
+          const deadlineDate = new Date();
+          deadlineDate.setDate(deadlineDate.getDate() + job.deadline);
+
+          const displayDate = deadlineDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+          });
+
+          jobs.push({
+            id: jobId++,
+            jobType: job.jobType,
+            name: job.name,
+            deadline: job.deadline,
+            displayDate,
+            profit: job.profit
+          });
+        });
+        renderTable();
+        showToast('⚠️ Using fallback sample jobs', 'error');
+      });
   }
 
   function renderTable() {
     const tbody = document.getElementById('job-tbody');
-    document.getElementById('job-count').textContent = jobs.length + ' job' + (jobs.length !== 1 ? 's' : '');
+    document.getElementById('job-count').textContent = jobs.length + ' project' + (jobs.length !== 1 ? 's' : '');
     if (!jobs.length) {
-      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No jobs yet. Add one above or load sample data.</td></tr>';
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No projects yet. Add one above or load sample freelancer jobs.</td></tr>';
       return;
     }
     tbody.innerHTML = jobs.map((j, i) => `
       <tr>
         <td style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:11px;">${i+1}</td>
-        <td style="font-weight:600;">${j.name}</td>
-        <td class="tc-deadline">T${j.deadline}</td>
-        <td class="tc-profit">₹${j.profit.toLocaleString()}</td>
-        <td><button class="btn-sm-danger" onclick="removeJob(${j.id})">✕ Remove</button></td>
+        <td style="font-size:12px;color:var(--accent);font-weight:600;">${j.jobType || '—'}</td>
+        <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${j.name}">${j.name}</td>
+        <td class="tc-deadline" style="font-family:'JetBrains Mono',monospace;font-size:12px;">${j.displayDate || `T${j.deadline}`}</td>
+        <td class="tc-profit" style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--accent);">₹${j.profit.toLocaleString()}</td>
+        <td><button class="btn-sm-danger" onclick="removeJob(${j.id})" title="Remove project">✕</button></td>
       </tr>`).join('');
   }
 
   // ── GREEDY ALGORITHM ──
-  function runScheduler() {
-    if (!jobs.length) { alert('Add at least one job first.'); return; }
+  async function runScheduler() {
+    if (!jobs.length) { showToast('Add at least one job first.', 'error'); return; }
+    if (!currentUser) { showToast('Please log in first.', 'error'); return; }
 
-    const sorted = [...jobs].sort((a,b) => b.profit - a.profit);
-    const maxDeadline = Math.max(...jobs.map(j => j.deadline));
-    const slots = new Array(maxDeadline).fill(null);
-    const steps = [];
-    const scheduled = [];
-    const skipped = [];
+    const btn = document.querySelector('.btn-run');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Optimizing...';
 
-    steps.push({ type:'info', text:`Sorted <strong>${sorted.length} jobs</strong> by profit: ${sorted.map(j=>`<span class="jname">${j.name}</span>`).join(', ')}` });
+    try {
+      // Get Firebase ID token
+      const idToken = await currentUser.getIdToken();
 
-    for (const job of sorted) {
-      let placed = false;
-      for (let t = Math.min(job.deadline, maxDeadline) - 1; t >= 0; t--) {
-        if (slots[t] === null) {
-          slots[t] = job;
-          scheduled.push({ ...job, slot: t+1 });
-          steps.push({ type:'ok', text:`<span class="jname">${job.name}</span> (₹${job.profit.toLocaleString()}, deadline T${job.deadline}) → <span class="slot-info">slot ${t+1}</span>` });
-          placed = true; break;
+      // Prepare jobs data for API
+      const apiJobs = jobs.map(job => ({
+        id: job.id,
+        job_type: job.job_type,
+        name: job.name,
+        deadline: new Date(job.deadline).toISOString(),
+        profit: job.profit
+      }));
+
+      // Call Flask API
+      const response = await fetch('/api/schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          idToken: idToken,
+          jobs: apiJobs,
+          workerType: userProfile?.workerType || 'Freelancer'
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'API call failed');
+      }
+
+      // Process API result
+      const scheduled = result.scheduled || [];
+      const skipped = result.skipped || [];
+      const totalProfit = result.total_profit || 0;
+      const steps = result.steps || [];
+
+      // Update UI with results
+      document.getElementById('r-profit').textContent = '₹' + totalProfit.toLocaleString();
+      document.getElementById('r-scheduled').textContent = scheduled.length;
+      document.getElementById('r-skipped').textContent = skipped.length;
+      document.getElementById('save-profit-preview').textContent = '₹' + totalProfit.toLocaleString() + ' profit';
+
+      // Show steps in result box
+      const stepsHtml = steps.map(step => `<div class="step-item">${step}</div>`).join('');
+      document.getElementById('result-steps').innerHTML = stepsHtml;
+
+      // Create timeline from scheduled jobs
+      const maxDay = Math.max(...scheduled.map(s => s.day), 0);
+      const timelineSlots = new Array(maxDay).fill(null);
+
+      scheduled.forEach(s => {
+        if (s.day <= maxDay) {
+          timelineSlots[s.day - 1] = { name: s.job, profit: 0 }; // API doesn't return profit per job in scheduled
         }
-      }
-      if (!placed) {
-        skipped.push(job);
-        steps.push({ type:'skip', text:`<span class="jname">${job.name}</span> (₹${job.profit.toLocaleString()}) <span class="skip-txt">— no slot available before deadline T${job.deadline}</span>` });
-      }
+      });
+
+      document.getElementById('result-timeline').innerHTML = timelineSlots.map((job,i) => job
+        ? `<div class="tslot filled"><div class="t-time">Day ${i+1}</div><div class="t-job">${job.name.length>9?job.name.slice(0,8)+'…':job.name}</div></div>`
+        : `<div class="tslot empty"><div class="t-time">Day ${i+1}</div><div class="t-job">idle</div></div>`
+      ).join('');
+
+      // Store result for saving
+      window.lastResult = {
+        scheduled: scheduled.map(s => ({ name: s.job, day: s.day })),
+        skipped: skipped,
+        totalProfit: totalProfit,
+        saved: result.saved
+      };
+
+      if (window._firebaseLoaded) window._firebaseLoaded.lastResult = window.lastResult;
+
+      document.getElementById('result-box').classList.add('show');
+      showToast('✓ Schedule optimized successfully!', 'success');
+
+    } catch (error) {
+      console.error('Scheduling error:', error);
+      showToast('Failed to optimize schedule: ' + error.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '🚀 Optimize My Schedule';
     }
-
-    const totalProfit = scheduled.reduce((s,j) => s+j.profit, 0);
-
-    // store result for save
-    window.lastResult = { scheduled, skipped, totalProfit, maxDeadline, slots };
-    // also expose to module scope
-    if (window._firebaseLoaded) window._firebaseLoaded.lastResult = window.lastResult;
-
-    // render result stats
-    document.getElementById('r-profit').textContent = '₹' + totalProfit.toLocaleString();
-    document.getElementById('r-scheduled').textContent = scheduled.length;
-    document.getElementById('r-skipped').textContent = skipped.length;
-    document.getElementById('save-profit-preview').textContent = '₹' + totalProfit.toLocaleString() + ' profit';
-
-    // timeline
-    document.getElementById('result-timeline').innerHTML = slots.map((job,i) => job
-      ? `<div class="tslot filled"><div class="t-time">T${i+1}</div><div class="t-job">${job.name.length>9?job.name.slice(0,8)+'…':job.name}</div><div class="t-profit-sm">₹${job.profit.toLocaleString()}</div></div>`
-      : `<div class="tslot empty"><div class="t-time">T${i+1}</div><div class="t-job">idle</div></div>`
-    ).join('');
+  }
 
     // steps
     document.getElementById('result-steps').innerHTML = steps.map((s,i) => `

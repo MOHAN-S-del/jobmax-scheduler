@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JobMax — Login</title>
+<title>FreelanceMax — Login</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -212,19 +212,18 @@
   <div class="logo">
     <div class="logo-icon">
       <svg viewBox="0 0 20 20" fill="none">
-        <rect x="2" y="4" width="4" height="12" rx="1" fill="#0c0f0a"/>
-        <rect x="8" y="7" width="4" height="9" rx="1" fill="#0c0f0a"/>
-        <rect x="14" y="2" width="4" height="14" rx="1" fill="#0c0f0a"/>
+        <path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z" stroke="#0c0f0a" stroke-width="2" fill="none"/>
+        <circle cx="10" cy="12" r="2" fill="#0c0f0a"/>
       </svg>
     </div>
     <div>
-      <div class="logo-text">JobMax</div>
-      <div class="logo-sub">Greedy Scheduler</div>
+      <div class="logo-text">FreelanceMax</div>
+      <div class="logo-sub">Smart Scheduler</div>
     </div>
   </div>
 
   <div class="page-title">Welcome back</div>
-  <div class="page-sub">Login to manage your scheduled jobs</div>
+  <div class="page-sub">Login to optimize your freelance projects</div>
 
   <div class="error-msg" id="error-msg">Invalid email or password. Please try again.</div>
 
@@ -268,9 +267,9 @@
 
   const firebaseConfig = {
     apiKey: "AIzaSyDom0HM4xQeiY300EqCvhuwF5q4pZfLW10",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    authDomain: "jobmax-scheduler.firebaseapp.com",
     projectId: "jobmax-scheduler",
-    storageBucket: "YOUR_PROJECT.appspot.com",
+    storageBucket: "jobmax-scheduler.appspot.com",
     messagingSenderId: "318072359776",
     appId: "1:318072359776:web:ae2d9986bf2c5233fd2c05"
   };

@@ -1,11 +1,11 @@
 """
-scheduler.py — Greedy Job Scheduling Algorithm
-================================================
-Project : JobMax — Greedy Job Scheduler
+scheduler.py — Greedy Job Scheduling Algorithm for Freelancers
+================================================================
+Project : FreelanceMax — Smart Project Scheduler
 Author  : (Your Name)
 Subject : Design and Analysis of Algorithms
 
-Algorithm : Greedy Job Sequencing with Deadlines
+Algorithm : Greedy Project Sequencing with Deadlines
 Time Complexity  : O(n log n)  — due to sorting
 Space Complexity : O(n)        — for the slots array
 """
@@ -13,20 +13,21 @@ Space Complexity : O(n)        — for the slots array
 
 def schedule_jobs(jobs):
     """
-    Greedy Job Scheduling Algorithm.
+    Greedy Project Scheduling Algorithm for Freelancers.
 
     Parameters:
-        jobs (list of dict): Each job has:
-            - 'id'       : unique job identifier
-            - 'name'     : job name (e.g. "Fix Pipe")
-            - 'deadline' : latest time unit by which job must finish
-            - 'profit'   : profit earned if job is completed
+        jobs (list of dict): Each project has:
+            - 'id'       : unique project identifier
+            - 'job_type' : project type (Web Development, Design, etc.)
+            - 'name'     : project name (e.g. "E-commerce Website")
+            - 'deadline' : datetime string (ISO format)
+            - 'profit'   : budget/earnings for the project
 
     Returns:
         dict: {
-            'scheduled'    : list of scheduled jobs with assigned slot,
-            'skipped'      : list of jobs that could not be scheduled,
-            'total_profit' : total profit earned,
+            'scheduled'    : list of scheduled projects with assigned slot,
+            'skipped'      : list of projects that could not be scheduled,
+            'total_profit' : total earnings,
             'slots'        : final slot assignments,
             'steps'        : step-by-step trace of algorithm decisions
         }
@@ -41,15 +42,28 @@ def schedule_jobs(jobs):
             'steps': []
         }
 
-    # ── STEP 1: Sort jobs by profit in descending order (Greedy Choice) ──
-    # Greedy strategy: always consider the highest profit job first
+    # ── STEP 1: Sort projects by profit in descending order (Greedy Choice) ──
+    # Greedy strategy: always consider the highest budget project first
     sorted_jobs = sorted(jobs, key=lambda j: j['profit'], reverse=True)
 
-    # ── STEP 2: Find maximum deadline to determine number of time slots ──
-    max_deadline = max(job['deadline'] for job in jobs)
+    # ── STEP 2: Convert deadlines to days from now ──
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
+    
+    # Calculate days until deadline for each project
+    for job in sorted_jobs:
+        try:
+            deadline_dt = datetime.fromisoformat(job['deadline'].replace('Z', '+00:00'))
+            days_until_deadline = (deadline_dt - now).days + 1  # +1 to make it 1-based
+            job['_days_deadline'] = max(1, days_until_deadline)  # Ensure at least 1 day
+        except:
+            job['_days_deadline'] = 7  # Default to 7 days if parsing fails
+
+    # Find maximum deadline in days
+    max_deadline = max(job['_days_deadline'] for job in sorted_jobs)
 
     # ── STEP 3: Initialize all time slots as empty (None) ──
-    # slots[0] represents time unit 1, slots[1] represents time unit 2, etc.
+    # slots[0] represents day 1, slots[1] represents day 2, etc.
     slots = [None] * max_deadline
 
     scheduled = []
@@ -58,46 +72,48 @@ def schedule_jobs(jobs):
 
     steps.append({
         'type': 'info',
-        'message': f"Sorted {len(sorted_jobs)} jobs by profit (descending): "
+        'message': f"Sorted {len(sorted_jobs)} projects by budget (descending): "
                    + ", ".join(f"{j['name']} (₹{j['profit']})" for j in sorted_jobs)
     })
 
-    # ── STEP 4: For each job (in order of decreasing profit) ──
+    # ── STEP 4: For each project (in order of decreasing profit) ──
     for job in sorted_jobs:
 
-        # Find the latest available slot before or at the job's deadline
-        # We go right-to-left to preserve earlier slots for future jobs
+        # Find the latest available slot before or at the project's deadline
+        # We go right-to-left to preserve earlier slots for future projects
         placed = False
-        for t in range(min(job['deadline'], max_deadline) - 1, -1, -1):
+        days_deadline = job['_days_deadline']
+        
+        for t in range(min(days_deadline, max_deadline) - 1, -1, -1):
             if slots[t] is None:
-                # ── GREEDY PLACEMENT: assign job to this slot ──
+                # ── GREEDY PLACEMENT: assign project to this slot ──
                 slots[t] = job
-                scheduled.append({**job, 'slot': t + 1})
+                scheduled.append({**job, 'slot': t + 1, 'slot_date': f"Day {t + 1}"})
                 steps.append({
                     'type': 'scheduled',
-                    'message': f"✓ '{job['name']}' (profit ₹{job['profit']}, deadline T{job['deadline']}) "
-                               f"→ placed at slot {t + 1}"
+                    'message': f"✓ '{job['name']}' ({job['job_type']}, budget ₹{job['profit']}, deadline {days_deadline} days) "
+                               f"→ scheduled for Day {t + 1}"
                 })
                 placed = True
                 break
 
         if not placed:
-            # No available slot found before this job's deadline — skip it
+            # No available slot found before this project's deadline — skip it
             skipped.append(job)
             steps.append({
                 'type': 'skipped',
-                'message': f"✗ '{job['name']}' (profit ₹{job['profit']}, deadline T{job['deadline']}) "
+                'message': f"✗ '{job['name']}' ({job['job_type']}, budget ₹{job['profit']}, deadline {days_deadline} days) "
                            f"— no available slot before deadline"
             })
 
-    # ── STEP 5: Calculate total profit ──
+    # ── STEP 5: Calculate total earnings ──
     total_profit = sum(job['profit'] for job in scheduled)
 
     steps.append({
         'type': 'result',
-        'message': f"Total profit = ₹{total_profit} | "
-                   f"Jobs scheduled: {len(scheduled)} | "
-                   f"Jobs skipped: {len(skipped)}"
+        'message': f"Total earnings = ₹{total_profit} | "
+                   f"Projects scheduled: {len(scheduled)} | "
+                   f"Projects skipped: {len(skipped)}"
     })
 
     return {

@@ -236,19 +236,18 @@
   <div class="logo">
     <div class="logo-icon">
       <svg viewBox="0 0 20 20" fill="none">
-        <rect x="2" y="4" width="4" height="12" rx="1" fill="#0c0f0a"/>
-        <rect x="8" y="7" width="4" height="9" rx="1" fill="#0c0f0a"/>
-        <rect x="14" y="2" width="4" height="14" rx="1" fill="#0c0f0a"/>
+        <path d="M10 2L3 7v11a2 2 0 002 2h10a2 2 0 002-2V7l-7-5z" stroke="#0c0f0a" stroke-width="2" fill="none"/>
+        <circle cx="10" cy="12" r="2" fill="#0c0f0a"/>
       </svg>
     </div>
     <div>
-      <div class="logo-text">JobMax</div>
-      <div class="logo-sub">Greedy Scheduler</div>
+      <div class="logo-text">FreelanceMax</div>
+      <div class="logo-sub">Smart Scheduler</div>
     </div>
   </div>
 
-  <div class="page-title">Create account</div>
-  <div class="page-sub">Start scheduling your jobs for maximum profit</div>
+  <div class="page-title">Join FreelanceMax</div>
+  <div class="page-sub">Optimize your freelance projects for maximum earnings</div>
 
   <div class="error-msg" id="error-msg"></div>
   <div class="success-msg" id="success-msg">✓ Account created! Redirecting to dashboard...</div>
@@ -279,14 +278,14 @@
     <input type="password" id="confirm-password" placeholder="Re-enter password" />
   </div>
 
-  <!-- Worker Type -->
+  <!-- Freelancer Type -->
   <div class="section-label">I am a —</div>
   <div class="worker-grid" id="worker-grid">
-    <div class="w-opt active" onclick="selectWorker(this,'Labour')"><span class="wicon">👷</span>Labour</div>
-    <div class="w-opt" onclick="selectWorker(this,'Carpenter')"><span class="wicon">🪚</span>Carpenter</div>
-    <div class="w-opt" onclick="selectWorker(this,'Plumber')"><span class="wicon">🔧</span>Plumber</div>
-    <div class="w-opt" onclick="selectWorker(this,'Electrician')"><span class="wicon">⚡</span>Electric</div>
-    <div class="w-opt" onclick="selectWorker(this,'Painter')"><span class="wicon">🎨</span>Painter</div>
+    <div class="w-opt active" onclick="selectWorker(this,'Web Developer')"><span class="wicon">💻</span>Web Dev</div>
+    <div class="w-opt" onclick="selectWorker(this,'Designer')"><span class="wicon">🎨</span>Designer</div>
+    <div class="w-opt" onclick="selectWorker(this,'Writer')"><span class="wicon">✍️</span>Writer</div>
+    <div class="w-opt" onclick="selectWorker(this,'Marketer')"><span class="wicon">📈</span>Marketer</div>
+    <div class="w-opt" onclick="selectWorker(this,'Consultant')"><span class="wicon">💼</span>Consultant</div>
   </div>
 
   <button class="btn-main" onclick="handleRegister()">Create Account →</button>
@@ -345,12 +344,12 @@
   import { getFirestore, doc, setDoc }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  // ── Replace with your Firebase config ──
+  // ── Firebase Config ──
   const firebaseConfig = {
     apiKey: "AIzaSyDom0HM4xQeiY300EqCvhuwF5q4pZfLW10",
     authDomain: "jobmax-scheduler.firebaseapp.com",
     projectId: "jobmax-scheduler",
-    storageBucket: "jobmax-scheduler.firebasestorage.app",
+    storageBucket: "jobmax-scheduler.appspot.com",
     messagingSenderId: "318072359776",
     appId: "1:318072359776:web:ae2d9986bf2c5233fd2c05"
   };

@@ -19,14 +19,23 @@ Run:
 """
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask_cors import CORS
 from firebase_config import db, auth
-from scheduler import schedule_jobs
+from scheduler_cpp_wrapper import schedule_jobs
 import os
+import logging
 
 app = Flask(__name__)
+CORS(app)
 
-# Secret key for session management — change this in production!
-app.secret_key = os.environ.get("SECRET_KEY", "jobmax-secret-key-change-me")
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Secret key for session management — MUST be set via environment variable
+app.secret_key = os.environ.get("SECRET_KEY")
+if not app.secret_key:
+    raise ValueError("❌ ERROR: SECRET_KEY environment variable not set. Please set it before running the app.")
 
 
 # ── Helper: Verify Firebase ID Token ─────────────────────────
@@ -39,7 +48,7 @@ def verify_token(id_token):
         decoded = auth.verify_id_token(id_token)
         return decoded
     except Exception as e:
-        print(f"[Auth Error] Token verification failed: {e}")
+        logger.warning(f"Token verification failed: {e}")
         return None
 
 
@@ -75,6 +84,10 @@ def dashboard():
 
 @app.route("/admin")
 def admin():
+    """Admin page (protected route—requires authentication)."""
+    user = get_current_user()
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
     return render_template("admin.html")
 
 
@@ -152,10 +165,19 @@ def api_schedule():
 
     # Validate job fields
     for job in jobs:
-        if not all(k in job for k in ("name", "deadline", "profit")):
-            return jsonify({"error": "Each job must have name, deadline, and profit"}), 400
-        if job["deadline"] < 1 or job["profit"] < 1:
-            return jsonify({"error": "Deadline and profit must be >= 1"}), 400
+        required_fields = ["job_type", "name", "deadline", "profit"]
+        if not all(k in job for k in required_fields):
+            return jsonify({"error": f"Each project must have: {', '.join(required_fields)}"}), 400
+
+        # Validate deadline is a valid datetime string
+        try:
+            from datetime import datetime
+            datetime.fromisoformat(job["deadline"].replace('Z', '+00:00'))
+        except:
+            return jsonify({"error": "Deadline must be a valid date/time"}), 400
+
+        if job["profit"] < 100:
+            return jsonify({"error": "Budget must be >= ₹100"}), 400
 
     # ── Run Greedy Algorithm ──
     result = schedule_jobs(jobs)
@@ -189,7 +211,7 @@ def api_schedule():
         result["saved"] = True
 
     except Exception as e:
-        print(f"[Firestore Error] Could not save schedule: {e}")
+        logger.error(f"Could not save schedule: {e}")
         result["saved"] = False
 
     return jsonify(result)
@@ -226,7 +248,7 @@ def api_history():
         return jsonify({"schedules": schedules})
 
     except Exception as e:
-        print(f"[Firestore Error] Could not fetch history: {e}")
+        logger.error(f"Could not fetch history: {e}")
         return jsonify({"error": "Failed to load history"}), 500
 
 
@@ -253,9 +275,10 @@ def api_profile():
 
 # ── Run Server ────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("\n" + "=" * 45)
-    print("   JobMax — Greedy Scheduler Server")
-    print("=" * 45)
-    print("  Running at: http://localhost:5000")
-    print("  Press Ctrl+C to stop\n")
-    app.run(debug=False, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))
+    port = int(os.environ.get("PORT", 5000))
+    logger.info("\n" + "=" * 45)
+    logger.info("   JobMax — Greedy Scheduler Server")
+    logger.info("=" * 45)
+    logger.info(f"  Running at: http://localhost:{port}")
+    logger.info("  Press Ctrl+C to stop\n")
+    app.run(debug=False, host="0.0.0.0", port=port)
