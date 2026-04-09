@@ -616,6 +616,7 @@
     }
     return userProfile;
   }
+  window.ensureUserProfile = ensureUserProfile;
 
   // ── Auth guard ──
   onAuthStateChanged(auth, async (user) => {
@@ -1102,9 +1103,10 @@ function addJob() {
       // Show steps in result box
       const stepsHtml = steps.map((step, i) => {
         let type = 'info';
-        if (step.includes('✓')) type = 'ok';
-        else if (step.includes('✗')) type = 'skip';
-        return `<div class="step-item"><div class="step-dot ${type}">✓</div><div>${step}</div></div>`;
+        let icon = 'i';
+        if (step.includes('✓')) { type = 'ok'; icon = '✓'; }
+        else if (step.includes('✗')) { type = 'skip'; icon = '✗'; }
+        return `<div class="step-item"><div class="step-dot ${type}">${icon}</div><div>${step}</div></div>`;
       }).join('');
       document.getElementById('result-steps').innerHTML = stepsHtml;
 

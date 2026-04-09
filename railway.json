@@ -1,9 +1,0 @@
-# Railway Deployment Configuration
-{
-  "build": {
-    "builder": "NIXPACKS"
-  },
-  "deploy": {
-    "startCommand": "gunicorn --bind 0.0.0.0:$PORT app:app"
-  }
-}
