@@ -60,13 +60,13 @@ def schedule_jobs_cpp(jobs):
         # Parse output JSON
         output = json.loads(result.stdout)
         
-        # Convert slot numbers to timesteps for compatibility
+        # Return full output including steps
         return {
             'scheduled': output.get('scheduled', []),
             'skipped': output.get('skipped', []),
             'total_profit': output.get('total_profit', 0),
             'slots': [],  # Not needed in this format
-            'steps': []   # Not tracked in C++ version
+            'steps': output.get('steps', [])  # Include steps from C++ scheduler
         }
     
     except subprocess.TimeoutExpired:

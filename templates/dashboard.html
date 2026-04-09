@@ -590,18 +590,49 @@
   let userProfile = null;
   let lastResult = null;
 
+  // Make userProfile globally accessible
+  window.userProfile = userProfile;
+
+  // ── Initialize User Profile ──
+  function initializeUserProfile() {
+    userProfile = {
+      name: 'Developer',
+      workerType: 'Freelancer',
+      totalProfit: 0,
+      schedulesRun: 0,
+      jobsCompleted: 0,
+      email: 'dev@example.com'
+    };
+    console.log('User profile initialized:', userProfile);
+  }
+
+  // ── Ensure Profile Available ──
+  function ensureUserProfile() {
+    if (!userProfile) {
+      console.warn('User profile was null, initializing...');
+      initializeUserProfile();
+      window.userProfile = userProfile;
+      renderProfile();
+    }
+    return userProfile;
+  }
+
   // ── Auth guard ──
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
+      // For local development, bypass authentication
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        console.log('🔧 Local development: Bypassing authentication');
+        currentUser = { uid: 'dev-user-123', displayName: 'Developer', email: 'dev@example.com' };
+        initializeUserProfile();
+        window.userProfile = userProfile;
+        renderProfile();
+        return;
+      }
       window.location.href = '/login';
       return;
     }
 
-    currentUser = user;
-    await loadUserProfile();
-    renderProfile();
-      return;
-    }
     currentUser = user;
     await loadUserProfile(user.uid);
     loadHistory();
@@ -610,32 +641,72 @@
   async function loadUserProfile(uid) {
     try {
       const snap = await getDoc(doc(db, 'users', uid));
-      userProfile = snap.exists() ? snap.data() : { name: currentUser.displayName || 'User', workerType: 'Worker', totalProfit: 0, schedulesRun: 0 };
+      if (snap.exists()) {
+        const data = snap.data();
+        userProfile = {
+          name: data.name || currentUser.displayName || 'User',
+          workerType: data.workerType || 'Freelancer',
+          totalProfit: data.totalProfit || 0,
+          schedulesRun: data.schedulesRun || 0,
+          jobsCompleted: data.jobsCompleted || 0,
+          email: data.email || currentUser.email || ''
+        };
+      } else {
+        // Create default profile for new users
+        userProfile = {
+          name: currentUser.displayName || 'User',
+          workerType: 'Freelancer',
+          totalProfit: 0,
+          schedulesRun: 0,
+          jobsCompleted: 0,
+          email: currentUser.email || ''
+        };
+        // Optionally save the default profile to Firestore
+        try {
+          await setDoc(doc(db, 'users', uid), userProfile);
+        } catch(e) {
+          console.log('Could not save default profile:', e);
+        }
+      }
+      window.userProfile = userProfile;
       renderProfile();
     } catch(e) {
-      userProfile = { name: currentUser.displayName || 'User', workerType: 'Worker', totalProfit: 0, schedulesRun: 0 };
+      console.error('Error loading user profile:', e);
+      // Fallback to basic profile
+      userProfile = {
+        name: currentUser.displayName || 'User',
+        workerType: 'Freelancer',
+        totalProfit: 0,
+        schedulesRun: 0,
+        jobsCompleted: 0,
+        email: currentUser.email || ''
+      };
+      window.userProfile = userProfile;
       renderProfile();
     }
   }
 
   function renderProfile() {
-    const initials = (userProfile.name || 'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    document.getElementById('user-avatar').textContent = initials;
-    document.getElementById('user-name').textContent = userProfile.name || 'User';
-    document.getElementById('user-role').textContent = userProfile.workerType || 'Freelancer';
-    document.getElementById('stat-total-profit').textContent = '₹' + (userProfile.totalProfit || 0).toLocaleString();
-    document.getElementById('stat-schedules').textContent = userProfile.schedulesRun || 0;
-    document.getElementById('stat-completed').textContent = userProfile.jobsCompleted || 0;
-    document.getElementById('stat-earnings').textContent = '₹' + (userProfile.totalProfit || 0).toLocaleString();
-  }
+    if (!userProfile) {
+      initializeUserProfile();
+    }
 
-    document.getElementById('profile-avatar').textContent = initials;
-    document.getElementById('profile-name').textContent = userProfile.name || '—';
-    document.getElementById('profile-email').textContent = currentUser.email || '—';
-    document.getElementById('profile-worker').textContent = userProfile.workerType || '—';
-    document.getElementById('profile-since').textContent = userProfile.createdAt ? new Date(userProfile.createdAt).toLocaleDateString('en-IN',{month:'short',year:'numeric'}) : '—';
-    document.getElementById('profile-schedules').textContent = userProfile.schedulesRun || 0;
-    document.getElementById('profile-profit').textContent = '₹' + (userProfile.totalProfit || 0).toLocaleString();
+    const initials = (userProfile.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    document.getElementById('user-avatar').textContent = initials;
+    document.getElementById('user-name').textContent = userProfile.name || 'Developer';
+    document.getElementById('user-role').textContent = userProfile.workerType || 'Freelancer';
+
+    // Update stats with proper formatting
+    const totalProfit = userProfile.totalProfit || 0;
+    const schedulesRun = userProfile.schedulesRun || 0;
+    const jobsCompleted = userProfile.jobsCompleted || 0;
+
+    document.getElementById('stat-total-profit').textContent = '₹' + totalProfit.toLocaleString();
+    document.getElementById('stat-schedules').textContent = schedulesRun;
+    document.getElementById('stat-completed').textContent = jobsCompleted;
+    document.getElementById('stat-earnings').textContent = '₹' + totalProfit.toLocaleString();
+
+    console.log('Profile rendered:', userProfile);
   }
 
   // ── HISTORY ──
@@ -677,31 +748,46 @@
 
   // ── SAVE SCHEDULE ──
   window.saveSchedule = async () => {
-    if (!lastResult || !currentUser) return;
+    if (!lastResult || !currentUser) {
+      showToast('No schedule to save or user not logged in.', 'error');
+      return;
+    }
+
     const btn = document.getElementById('btn-save');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Saving...';
+
     try {
-      await addDoc(collection(db, 'schedules'), {
+      const scheduleData = {
         userId: currentUser.uid,
-        workerType: userProfile.workerType || 'Worker',
+        workerType: userProfile.workerType || 'Freelancer',
         totalProfit: lastResult.totalProfit,
-        totalSlots: lastResult.maxDeadline,
+        totalSlots: lastResult.maxDeadline || 30,
         scheduledJobs: lastResult.scheduled,
         skippedJobs: lastResult.skipped,
         createdAt: new Date().toISOString()
-      });
-      // Update user stats
-      await updateDoc(doc(db, 'users', currentUser.uid), {
+      };
+
+      await addDoc(collection(db, 'schedules'), scheduleData);
+
+      // Update user stats with proper increment
+      const userRef = doc(db, 'users', currentUser.uid);
+      await updateDoc(userRef, {
         totalProfit: increment(lastResult.totalProfit),
         schedulesRun: increment(1),
-        jobsCompleted: increment(lastResult.scheduled.length)
+        jobsCompleted: increment(lastResult.scheduled.length),
+        lastScheduledAt: new Date().toISOString()
       });
+
       showToast('✓ Schedule saved to Firebase!', 'success');
       btn.textContent = '✓ Saved';
+
+      // Reload user profile to reflect updated stats
       await loadUserProfile(currentUser.uid);
       loadHistory();
+
     } catch(e) {
+      console.error('Save error:', e);
       showToast('Failed to save. Check Firebase config.', 'error');
       btn.disabled = false;
       btn.textContent = '💾 Save to Firebase';
@@ -730,6 +816,9 @@
   // ── UI / Algorithm (non-module) ──
   let jobs = [];
   let jobId = 1;
+
+  // Make jobs globally accessible for debugging
+  window.jobs = jobs;
 
 // Populate minute dropdown
 function populateMinuteDropdown() {
@@ -762,8 +851,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab === el));
+  document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === 'tab-' + name));
+}
 
-  function addJob() {
+function addJob() {
+    console.log('addJob called');
     const jobType = document.getElementById('inp-job-type').value;
     const name = document.getElementById('inp-name').value.trim();
     const date = document.getElementById('inp-date').value;
@@ -771,6 +864,8 @@ function switchTab(name, el) {
     const minute = document.getElementById('inp-minute').value;
     const ampm = document.getElementById('inp-ampm').value;
     const profit = parseInt(document.getElementById('inp-profit').value);
+
+    console.log('Form values:', { jobType, name, date, hour, minute, ampm, profit });
 
     if (!jobType || !name || !date || !hour || !minute || !profit || profit < 100) {
       showToast('Please fill in all fields with valid values.', 'error');
@@ -797,9 +892,13 @@ function switchTab(name, el) {
       jobType,
       name,
       deadline: daysUntil,
+      deadlineISO: deadlineDate.toISOString(),
       displayDate,
       profit
     });
+
+    console.log('Job added, jobs array now:', jobs);
+    window.jobs = jobs;
 
     // Clear form
     document.getElementById('inp-job-type').value = '';
@@ -854,6 +953,7 @@ function switchTab(name, el) {
             jobType: job.job_type,
             name: job.name,
             deadline: daysUntil,
+            deadlineISO: deadlineDate.toISOString(),
             displayDate,
             profit: job.profit
           });
@@ -893,6 +993,7 @@ function switchTab(name, el) {
             jobType: job.jobType,
             name: job.name,
             deadline: job.deadline,
+            deadlineISO: deadlineDate.toISOString(),
             displayDate,
             profit: job.profit
           });
@@ -922,25 +1023,45 @@ function switchTab(name, el) {
 
   // ── GREEDY ALGORITHM ──
   async function runScheduler() {
-    if (!jobs.length) { showToast('Add at least one job first.', 'error'); return; }
-    if (!currentUser) { showToast('Please log in first.', 'error'); return; }
+    console.log('runScheduler called');
+    console.log('jobs array:', jobs);
+    console.log('jobs.length:', jobs.length);
+
+    if (!jobs.length) {
+      showToast('Add at least one job first.', 'error');
+      return;
+    }
+
+    // Ensure user profile is available
+    ensureUserProfile();
+    console.log('userProfile after ensure:', userProfile);
 
     const btn = document.querySelector('.btn-run');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Optimizing...';
 
     try {
-      // Get Firebase ID token
-      const idToken = await currentUser.getIdToken();
+      // For local development, bypass authentication
+      let idToken = null;
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        if (!currentUser) {
+          showToast('Please log in first.', 'error');
+          return;
+        }
+        idToken = await currentUser.getIdToken();
+      }
 
-      // Prepare jobs data for API
+      // Prepare jobs data for API (convert from UI format to API format)
       const apiJobs = jobs.map(job => ({
         id: job.id,
-        job_type: job.job_type,
+        job_type: job.jobType || 'General',
         name: job.name,
-        deadline: new Date(job.deadline).toISOString(),
+        deadline: job.deadlineISO,
         profit: job.profit
       }));
+
+      console.log('Sending jobs to API:', apiJobs);
+      console.log('User profile:', userProfile);
 
       // Call Flask API
       const response = await fetch('/api/schedule', {
@@ -949,17 +1070,22 @@ function switchTab(name, el) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          idToken: idToken,
+          ...(idToken && { idToken }),
           jobs: apiJobs,
-          workerType: userProfile?.workerType || 'Freelancer'
+          workerType: userProfile.workerType || 'Freelancer'
         })
       });
 
-      const result = await response.json();
+      console.log('API call made, response status:', response.status);
+      console.log('Response ok:', response.ok);
 
       if (!response.ok) {
-        throw new Error(result.error || 'API call failed');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
+
+      const result = await response.json();
+      console.log('API Response:', result);
 
       // Process API result
       const scheduled = result.scheduled || [];
@@ -974,7 +1100,12 @@ function switchTab(name, el) {
       document.getElementById('save-profit-preview').textContent = '₹' + totalProfit.toLocaleString() + ' profit';
 
       // Show steps in result box
-      const stepsHtml = steps.map(step => `<div class="step-item">${step}</div>`).join('');
+      const stepsHtml = steps.map((step, i) => {
+        let type = 'info';
+        if (step.includes('✓')) type = 'ok';
+        else if (step.includes('✗')) type = 'skip';
+        return `<div class="step-item"><div class="step-dot ${type}">✓</div><div>${step}</div></div>`;
+      }).join('');
       document.getElementById('result-steps').innerHTML = stepsHtml;
 
       // Create timeline from scheduled jobs
@@ -983,7 +1114,7 @@ function switchTab(name, el) {
 
       scheduled.forEach(s => {
         if (s.day <= maxDay) {
-          timelineSlots[s.day - 1] = { name: s.job, profit: 0 }; // API doesn't return profit per job in scheduled
+          timelineSlots[s.day - 1] = { name: s.job, profit: 0 };
         }
       });
 
@@ -997,6 +1128,7 @@ function switchTab(name, el) {
         scheduled: scheduled.map(s => ({ name: s.job, day: s.day })),
         skipped: skipped,
         totalProfit: totalProfit,
+        maxDeadline: maxDay,
         saved: result.saved
       };
 
@@ -1012,22 +1144,6 @@ function switchTab(name, el) {
       btn.disabled = false;
       btn.innerHTML = '🚀 Optimize My Schedule';
     }
-  }
-
-    // steps
-    document.getElementById('result-steps').innerHTML = steps.map((s,i) => `
-      <div class="step-item">
-        <div class="step-dot ${s.type}">${i+1}</div>
-        <div>${s.text}</div>
-      </div>`).join('');
-
-    // reset save button
-    const btn = document.getElementById('btn-save');
-    btn.disabled = false;
-    btn.textContent = '💾 Save to Firebase';
-
-    document.getElementById('result-box').classList.add('show');
-    document.getElementById('result-box').scrollIntoView({ behavior:'smooth', block:'start' });
   }
 
   // patch saveSchedule to use window.lastResult

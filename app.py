@@ -131,32 +131,31 @@ def logout():
 def api_schedule():
     """
     Run the greedy scheduling algorithm and save result to Firestore.
-
-    Body:
-    {
-        "idToken"    : "<firebase_id_token>",
-        "jobs"       : [{ "id", "name", "deadline", "profit" }, ...],
-        "workerType" : "Plumber"
-    }
-
-    Returns:
-    {
-        "scheduled"    : [...],
-        "skipped"      : [...],
-        "total_profit" : 1800,
-        "steps"        : [...],
-        "saved"        : true
-    }
     """
+    logger.info(f"Schedule API called from {request.host}")
     data = request.get_json()
+    logger.info(f"Request data: {data}")
 
-    # Validate token
-    id_token = data.get("idToken")
-    decoded = verify_token(id_token)
-    if not decoded:
-        return jsonify({"error": "Unauthorized"}), 401
+    # For local development, bypass authentication
+    is_local = 'localhost' in request.host or '127.0.0.1' in request.host
+    logger.info(f"Request host: {request.host}, is_local: {is_local}, method: {request.method}, path: {request.path}")
+    
+    if not is_local:
+        # Validate token for production
+        id_token = data.get("idToken")
+        if not id_token:
+            logger.info("No idToken provided for non-local request")
+            return jsonify({"error": "Unauthorized"}), 401
+        decoded = verify_token(id_token)
+        if not decoded:
+            logger.info("Token verification failed")
+            return jsonify({"error": "Unauthorized"}), 401
+        uid = decoded["uid"]
+    else:
+        # Mock user for local development
+        uid = "dev-user-123"
+        logger.info("Using mock user for local development")
 
-    uid = decoded["uid"]
     jobs = data.get("jobs", [])
     worker_type = data.get("workerType", "Worker")
 
@@ -168,51 +167,54 @@ def api_schedule():
         required_fields = ["job_type", "name", "deadline", "profit"]
         if not all(k in job for k in required_fields):
             return jsonify({"error": f"Each project must have: {', '.join(required_fields)}"}), 400
-
+        
         # Validate deadline is a valid datetime string
         try:
             from datetime import datetime
             datetime.fromisoformat(job["deadline"].replace('Z', '+00:00'))
         except:
             return jsonify({"error": "Deadline must be a valid date/time"}), 400
-
+            
         if job["profit"] < 100:
             return jsonify({"error": "Budget must be >= ₹100"}), 400
 
     # ── Run Greedy Algorithm ──
     result = schedule_jobs(jobs)
 
-    # ── Save to Firestore ──
-    try:
-        from datetime import datetime
+    # ── Save to Firestore (only in production) ──
+    if not is_local:
+        try:
+            from datetime import datetime
 
-        # Save schedule document
-        schedule_ref = db.collection("schedules").add({
-            "userId"        : uid,
-            "workerType"    : worker_type,
-            "totalProfit"   : result["total_profit"],
-            "totalSlots"    : len(result["slots"]),
-            "scheduledJobs" : result["scheduled"],
-            "skippedJobs"   : result["skipped"],
-            "createdAt"     : datetime.utcnow().isoformat()
-        })
-
-        # Update user stats
-        user_ref = db.collection("users").document(uid)
-        user_doc = user_ref.get()
-        if user_doc.exists:
-            current = user_doc.to_dict()
-            user_ref.update({
-                "totalProfit"   : current.get("totalProfit", 0) + result["total_profit"],
-                "schedulesRun"  : current.get("schedulesRun", 0) + 1,
-                "jobsCompleted" : current.get("jobsCompleted", 0) + len(result["scheduled"])
+            # Save schedule document
+            schedule_ref = db.collection("schedules").add({
+                "userId"        : uid,
+                "workerType"    : worker_type,
+                "totalProfit"   : result["total_profit"],
+                "totalSlots"    : len(result["slots"]),
+                "scheduledJobs" : result["scheduled"],
+                "skippedJobs"   : result["skipped"],
+                "createdAt"     : datetime.utcnow().isoformat()
             })
 
-        result["saved"] = True
+            # Update user stats
+            user_ref = db.collection("users").document(uid)
+            user_doc = user_ref.get()
+            if user_doc.exists:
+                current = user_doc.to_dict()
+                user_ref.update({
+                    "totalProfit"   : current.get("totalProfit", 0) + result["total_profit"],
+                    "schedulesRun"  : current.get("schedulesRun", 0) + 1,
+                    "jobsCompleted" : current.get("jobsCompleted", 0) + len(result["scheduled"])
+                })
 
-    except Exception as e:
-        logger.error(f"Could not save schedule: {e}")
-        result["saved"] = False
+            result["saved"] = True
+
+        except Exception as e:
+            logger.error(f"Could not save schedule: {e}")
+            result["saved"] = False
+    else:
+        result["saved"] = False  # Not saving in local development
 
     return jsonify(result)
 
