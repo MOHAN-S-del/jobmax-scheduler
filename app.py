@@ -142,17 +142,18 @@ def api_schedule():
     # To test Firebase storage locally, you can set is_local = False
     logger.info(f"Request host: {request.host}, is_local: {is_local}, method: {request.method}, path: {request.path}")
     
-    # Authentication: Use token or session
-    uid = None
+    # Check for Bearer token in headers
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        id_token = auth_header.split(" ")[1]
+    
+    # Also check for x-id-token header
+    if not id_token:
+        id_token = request.headers.get("x-id-token")
     
     # Check JSON body
-    id_token = (data or {}).get("idToken")
-    
-    # Check Authorization Header
-    if not id_token:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            id_token = auth_header.split(" ")[1]
+    if not id_token and data:
+        id_token = data.get("idToken")
     
     # Check Query Parameters
     if not id_token:
@@ -163,6 +164,8 @@ def api_schedule():
         if decoded:
             uid = decoded["uid"]
             logger.info(f"Verified via Token: {uid}")
+        else:
+            logger.warning(f"Provided token could not be verified")
 
     if not uid:
         # Fallback to Flask session
@@ -175,7 +178,7 @@ def api_schedule():
             logger.info("Using mock user for local development")
 
     if not uid:
-        logger.warning("No authenticated user found for schedule request")
+        logger.warning(f"No authenticated user found for request from {request.host}")
         return jsonify({
             "error": "Authentication Failed",
             "message": "User session expired or invalid. Please log out and log back in."

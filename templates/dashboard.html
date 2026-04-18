@@ -1148,9 +1148,11 @@ function addJob() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': idToken ? `Bearer ${idToken}` : '',
+          'x-id-token': idToken || ''
         },
         body: JSON.stringify({
-          ...(idToken && { idToken }),
+          idToken: idToken,
           jobs: apiJobs,
           workerType: userProfile.workerType || 'Freelancer'
         })
