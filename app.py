@@ -48,7 +48,7 @@ def verify_token(id_token):
         decoded = auth.verify_id_token(id_token)
         return decoded
     except Exception as e:
-        logger.warning(f"Token verification failed: {e}")
+        logger.error(f"❌ Token verification failed: {str(e)}")
         return None
 
 
@@ -142,26 +142,32 @@ def api_schedule():
     # To test Firebase storage locally, you can set is_local = False
     logger.info(f"Request host: {request.host}, is_local: {is_local}, method: {request.method}, path: {request.path}")
     
-    if not is_local:
-        # Validate token for production
-        id_token = data.get("idToken")
-        if not id_token:
-            logger.info("No idToken provided for non-local request")
-            return jsonify({"error": "Unauthorized"}), 401
+    # Authentication: Use token or session
+    uid = None
+    # Allow token from JSON body, query parameters, or Authorization header
+    id_token = (data or {}).get("idToken") or \
+               request.args.get("idToken") or \
+               request.headers.get("Authorization", "").replace("Bearer ", "")
+    
+    if id_token:
         decoded = verify_token(id_token)
-        if not decoded:
-            logger.info("Token verification failed")
-            return jsonify({"error": "Unauthorized"}), 401
-        uid = decoded["uid"]
-    else:
-        # In local mode, try to get UID from session if user is logged in via Firebase JS SDK
+        if decoded:
+            uid = decoded["uid"]
+            logger.info(f"Verified via idToken: {uid}")
+
+    if not uid:
+        # Fallback to Flask session
         user = get_current_user()
         if user:
             uid = user["uid"]
-            logger.info(f"Using session user UID: {uid}")
-        else:
+            logger.info(f"Verified via Session: {uid}")
+        elif is_local:
             uid = "dev-user-123"
             logger.info("Using mock user for local development")
+
+    if not uid:
+        logger.warning("No authenticated user found for schedule request")
+        return jsonify({"error": "Unauthorized: No valid user found. Please log in again."}), 401
 
     jobs = data.get("jobs", [])
     worker_type = data.get("workerType", "Worker")

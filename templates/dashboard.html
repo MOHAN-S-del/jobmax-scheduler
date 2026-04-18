@@ -635,6 +635,20 @@
     }
 
     currentUser = user;
+    
+    // Sync session with Flask backend for API reliability
+    try {
+      const idToken = await user.getIdToken();
+      await fetch('/api/session-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+      });
+      console.log('✓ Session synced with Flask backend');
+    } catch(e) {
+      console.error('Failed to sync session:', e);
+    }
+
     await loadUserProfile(user.uid);
     loadHistory();
   });
