@@ -1161,7 +1161,8 @@ function addJob() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        const errorMsg = errorData.message || errorData.error || `HTTP ${response.status}`;
+        throw new Error(errorMsg);
       }
 
       const result = await response.json();

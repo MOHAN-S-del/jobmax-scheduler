@@ -144,16 +144,25 @@ def api_schedule():
     
     # Authentication: Use token or session
     uid = None
-    # Allow token from JSON body, query parameters, or Authorization header
-    id_token = (data or {}).get("idToken") or \
-               request.args.get("idToken") or \
-               request.headers.get("Authorization", "").replace("Bearer ", "")
+    
+    # Check JSON body
+    id_token = (data or {}).get("idToken")
+    
+    # Check Authorization Header
+    if not id_token:
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            id_token = auth_header.split(" ")[1]
+    
+    # Check Query Parameters
+    if not id_token:
+        id_token = request.args.get("idToken")
     
     if id_token:
         decoded = verify_token(id_token)
         if decoded:
             uid = decoded["uid"]
-            logger.info(f"Verified via idToken: {uid}")
+            logger.info(f"Verified via Token: {uid}")
 
     if not uid:
         # Fallback to Flask session
@@ -167,7 +176,10 @@ def api_schedule():
 
     if not uid:
         logger.warning("No authenticated user found for schedule request")
-        return jsonify({"error": "Unauthorized: No valid user found. Please log in again."}), 401
+        return jsonify({
+            "error": "Authentication Failed",
+            "message": "User session expired or invalid. Please log out and log back in."
+        }), 401
 
     jobs = data.get("jobs", [])
     worker_type = data.get("workerType", "Worker")
