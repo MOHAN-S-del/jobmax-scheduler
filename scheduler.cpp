@@ -10,7 +10,7 @@
 using namespace std;
 
 // ─── Helper: Calculate days until deadline ────────────
-int calculateDaysUntilDeadline(const string& deadline_str) {
+int calculateDaysUntilDeadline(const string& deadline_str, string& error_msg) {
     // Parse ISO datetime string (e.g., "2024-01-15T10:00:00")
     // Return days until deadline from current time
     
@@ -24,17 +24,30 @@ int calculateDaysUntilDeadline(const string& deadline_str) {
         ss.str(deadline_str.substr(0, 10)); // Take date part only
         ss >> get_time(&deadline_tm, "%Y-%m-%d");
         if (ss.fail()) {
-            return 7; // Default fallback
+            error_msg = "Invalid date format. Expected YYYY-MM-DD.";
+            return -1;
         }
     }
     
     time_t deadline_time = mktime(&deadline_tm);
     time_t now = time(nullptr);
     
+    // Get beginning of today for fair comparison
+    struct tm* now_tm = localtime(&now);
+    now_tm->tm_hour = 0;
+    now_tm->tm_min = 0;
+    now_tm->tm_sec = 0;
+    time_t today_start = mktime(now_tm);
+
+    if (deadline_time < today_start) {
+        error_msg = "Invalid deadline: Please enter a future date.";
+        return -2; // Special code for past date
+    }
+    
     double seconds_diff = difftime(deadline_time, now);
     int days_diff = static_cast<int>(seconds_diff / (60 * 60 * 24));
     
-    return max(1, days_diff); // At least 1 day
+    return max(0, days_diff + 1); // 0 for today, >0 for future
 }
 
 // ─── Job Structure ────────────────────────────────────
@@ -66,7 +79,7 @@ ScheduleResult scheduleJobs(vector<Job>& jobs) {
     }
 
     result.steps.push_back("Step 1: Sorting " + to_string(jobs.size()) + " jobs by profit (descending)");
-    // ── STEP 1: Sort jobs by profit in descending order ──
+    // ── STEP 1: Sort jobs by profit in descending ordegt r ──
     sort(jobs.begin(), jobs.end(), [](const Job& a, const Job& b) {
         return a.profit > b.profit;
     });
@@ -86,6 +99,13 @@ ScheduleResult scheduleJobs(vector<Job>& jobs) {
     // ── STEP 4: For each job (in order of decreasing profit) ──
     result.steps.push_back("Step 4: Scheduling jobs in profit order");
     for (const auto& job : jobs) {
+        // Special Case: Job has a past deadline
+        if (job.days_deadline == -2) {
+            result.skipped.push_back(job);
+            result.steps.push_back("  ✗ Skipped '" + job.name + "' (₹" + to_string(job.profit) + ") - Deadline was in the past");
+            continue;
+        }
+
         // Try to place job in latest available slot before deadline
         bool placed = false;
         int available_slot = -1;
@@ -118,7 +138,7 @@ ScheduleResult scheduleJobs(vector<Job>& jobs) {
 }
 
 // ─── Simple JSON Parser for input ─────────────────────
-bool parseJobsFromJSON(const string& json_str, vector<Job>& jobs) {
+bool parseJobsFromJSON(const string& json_str, vector<Job>& jobs, string& error_msg) {
     // Simple parser for JSON array of jobs
     // Format: [{"id":1,"job_type":"Web Development","name":"Project","deadline":"2024-01-01T10:00","profit":500},...]
     
@@ -128,7 +148,7 @@ bool parseJobsFromJSON(const string& json_str, vector<Job>& jobs) {
     while ((pos = json_str.find("{", pos)) != string::npos) {
         Job job;
         job.id = 0;
-        job.days_deadline = 7; // default
+        job.days_deadline = -1; 
         job.profit = 0;
         job.name = "";
         job.job_type = "";
@@ -137,6 +157,7 @@ bool parseJobsFromJSON(const string& json_str, vector<Job>& jobs) {
         size_t end_pos = json_str.find("}", pos);
         string job_str = json_str.substr(pos, end_pos - pos + 1);
         
+        // ... (existing parsing logic remains same) ...
         // Parse id
         size_t id_pos = job_str.find("\"id\"");
         if (id_pos != string::npos) {
@@ -173,8 +194,12 @@ bool parseJobsFromJSON(const string& json_str, vector<Job>& jobs) {
             size_t second_quote = job_str.find("\"", first_quote + 1);
             job.deadline = job_str.substr(first_quote + 1, second_quote - first_quote - 1);
             
-            // Calculate actual days until deadline
-            job.days_deadline = calculateDaysUntilDeadline(job.deadline);
+            // Calculate actual days until deadline with validation
+            job.days_deadline = calculateDaysUntilDeadline(job.deadline, error_msg);
+            if (job.days_deadline == -1) {
+                return false; // Stop ONLY if date format is invalid
+            }
+            // If job.days_deadline == -2 (past date), we still keep the job but it will be skipped by scheduler
         }
 
         // Parse profit
@@ -188,6 +213,7 @@ bool parseJobsFromJSON(const string& json_str, vector<Job>& jobs) {
             job.profit = stoi(profit_str);
         }
 
+        // We accept the job even if deadline is -2, so it can be handled by scheduleJobs
         if (!job.name.empty() && job.profit > 0) {
             jobs.push_back(job);
         }
@@ -257,8 +283,13 @@ int main(int argc, char* argv[]) {
     }
 
     vector<Job> jobs;
+    string error_msg;
 
-    if (!parseJobsFromJSON(json_input, jobs)) {
+    if (!parseJobsFromJSON(json_input, jobs, error_msg)) {
+        if (!error_msg.empty()) {
+            cout << "{\n  \"error\": \"" << error_msg << "\",\n  \"scheduled\": [],\n  \"skipped\": [],\n  \"total_profit\": 0,\n  \"steps\": [\"Error: " << error_msg << "\"]\n}\n";
+            return 0; // Return valid JSON error instead of crashing
+        }
         cerr << "Failed to parse jobs from JSON" << endl;
         return 1;
     }

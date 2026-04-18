@@ -138,6 +138,8 @@ def api_schedule():
 
     # For local development, bypass authentication
     is_local = 'localhost' in request.host or '127.0.0.1' in request.host
+    # FORCE authentication for testing if needed, or keep local bypass
+    # To test Firebase storage locally, you can set is_local = False
     logger.info(f"Request host: {request.host}, is_local: {is_local}, method: {request.method}, path: {request.path}")
     
     if not is_local:
@@ -152,9 +154,14 @@ def api_schedule():
             return jsonify({"error": "Unauthorized"}), 401
         uid = decoded["uid"]
     else:
-        # Mock user for local development
-        uid = "dev-user-123"
-        logger.info("Using mock user for local development")
+        # In local mode, try to get UID from session if user is logged in via Firebase JS SDK
+        user = get_current_user()
+        if user:
+            uid = user["uid"]
+            logger.info(f"Using session user UID: {uid}")
+        else:
+            uid = "dev-user-123"
+            logger.info("Using mock user for local development")
 
     jobs = data.get("jobs", [])
     worker_type = data.get("workerType", "Worker")
@@ -181,8 +188,8 @@ def api_schedule():
     # ── Run Greedy Algorithm ──
     result = schedule_jobs(jobs)
 
-    # ── Save to Firestore (only in production) ──
-    if not is_local:
+    # ── Save to Firestore (enabled for authenticated users even locally) ──
+    if uid != "dev-user-123":
         try:
             from datetime import datetime
 
@@ -207,14 +214,25 @@ def api_schedule():
                     "schedulesRun"  : current.get("schedulesRun", 0) + 1,
                     "jobsCompleted" : current.get("jobsCompleted", 0) + len(result["scheduled"])
                 })
+            else:
+                # Create user document if it doesn't exist
+                user_ref.set({
+                    "totalProfit"   : result["total_profit"],
+                    "schedulesRun"  : 1,
+                    "jobsCompleted" : len(result["scheduled"]),
+                    "email"         : session.get("user", {}).get("email", ""),
+                    "name"          : session.get("user", {}).get("name", "User")
+                })
 
             result["saved"] = True
+            logger.info(f"Schedule saved to Firestore for UID: {uid}")
 
         except Exception as e:
-            logger.error(f"Could not save schedule: {e}")
+            logger.error(f"Could not save schedule to Firestore: {e}")
             result["saved"] = False
     else:
-        result["saved"] = False  # Not saving in local development
+        result["saved"] = False
+        logger.info("Bypassing Firestore save for dev-user-123")
 
     return jsonify(result)
 

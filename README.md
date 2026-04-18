@@ -109,16 +109,37 @@ pip install -r requirements.txt
 
 ---
 
-## Step 7 — Run the Project
+## 🚀 Deployment
 
-```bash
-python app.py
-```
+### Option 1: Firebase + Cloud Run (Recommended)
+Since this project uses a C++ engine and a Python backend, it cannot be hosted on Firebase Hosting alone (which is for static files). Instead, we use **Google Cloud Run** to host the backend and **Firebase Hosting** to route traffic to it.
 
-Open your browser and go to:
-```
-http://localhost:5000
-```
+1. **Install Firebase CLI**:
+   ```bash
+   npm install -g firebase-tools
+   firebase login
+   ```
+
+2. **Deploy the Backend to Cloud Run**:
+   Ensure you have a Google Cloud project with billing enabled, then run:
+   ```bash
+   gcloud run deploy jobmax-backend --source . --region us-central1 --allow-unauthenticated
+   ```
+
+3. **Deploy to Firebase Hosting**:
+   This will connect your custom domain/hosting URL to the Cloud Run backend:
+   ```bash
+   firebase deploy --only hosting
+   ```
+
+### Option 2: Generic Cloud Platforms
+If deploying to **Render**, **Railway**, or **Heroku**:
+- **Build Command**: `bash deploy.sh`
+- **Start Command**: `gunicorn --bind 0.0.0.0:$PORT app:app`
+- **Environment Variables**:
+  - `SECRET_KEY`: A long random string.
+  - `PORT`: Usually `8080` or provided by the platform.
+  - `GOOGLE_APPLICATION_CREDENTIALS_JSON`: The content of your `serviceAccountKey.json`.
 
 ---
 

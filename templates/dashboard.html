@@ -386,7 +386,7 @@
         </div>
         <div class="form-field">
           <label>Deadline Date</label>
-          <input type="date" id="inp-date" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: 'JetBrains Mono',monospace; font-size: 13px; outline: none;" />
+          <input type="date" id="inp-date" onfocus="this.min=new Date().toLocaleDateString('en-ca')" style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: 'JetBrains Mono',monospace; font-size: 13px; outline: none;" />
         </div>
         <div class="form-field">
           <label>Deadline Time</label>
@@ -713,44 +713,64 @@
   // ── HISTORY ──
   async function loadHistory() {
     const container = document.getElementById('history-container');
+    
+    // Get local history from localStorage
+    let localHistory = [];
     try {
-      const q = query(
-        collection(db, 'schedules'),
-        where('userId', '==', currentUser.uid),
-        orderBy('createdAt', 'desc')
-      );
-      const snap = await getDocs(q);
-      if (snap.empty) {
-        container.innerHTML = '<div class="history-empty">No schedules saved yet. Run the scheduler and save your first result!</div>';
-        return;
+      const stored = localStorage.getItem('jobmax_local_history');
+      if (stored) localHistory = JSON.parse(stored);
+    } catch(e) { console.error('Error reading local history:', e); }
+
+    let firebaseDocs = [];
+    try {
+      if (currentUser && currentUser.uid !== 'dev-user-123') {
+        const q = query(
+          collection(db, 'schedules'),
+          where('userId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc')
+        );
+        const snap = await getDocs(q);
+        firebaseDocs = snap.docs.map(d => ({id: d.id, ...d.data()}));
       }
-      container.innerHTML = snap.docs.map(d => {
-        const s = d.data();
-        const date = new Date(s.createdAt).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
-        const tags = s.scheduledJobs.map(j => `<span class="hc-tag">${j.name}</span>`).join('');
-        const skips = s.skippedJobs.length ? `<span class="hc-tag skip">+${s.skippedJobs.length} skipped</span>` : '';
-        return `
-          <div class="history-card">
-            <div class="hc-top">
-              <div>
-                <div style="font-weight:700;font-size:15px;margin-bottom:4px;">${s.workerType} Schedule</div>
-                <div class="hc-date">${date}</div>
-              </div>
-              <div class="hc-profit">₹${s.totalProfit.toLocaleString()}</div>
-            </div>
-            <div class="hc-tags">${tags}${skips}</div>
-            <div class="hc-meta">${s.scheduledJobs.length} jobs scheduled · ${s.totalSlots} time slots</div>
-          </div>`;
-      }).join('');
     } catch(e) {
-      container.innerHTML = '<div class="history-empty">Could not load history. Make sure Firestore is set up.</div>';
+      console.warn('Firebase history load failed, showing local only:', e);
     }
+
+    // Combine and sort by date
+    const allHistory = [...localHistory, ...firebaseDocs].sort((a, b) => 
+      new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
+    if (allHistory.length === 0) {
+      container.innerHTML = '<div class="history-empty">No schedules saved yet. Run the scheduler and save your first result!</div>';
+      return;
+    }
+
+    container.innerHTML = allHistory.map(s => {
+      const date = new Date(s.createdAt).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+      const tags = s.scheduledJobs.map(j => `<span class="hc-tag">${j.name}</span>`).join('');
+      const skips = s.skippedJobs.length ? `<span class="hc-tag skip">+${s.skippedJobs.length} skipped</span>` : '';
+      const isLocal = !s.id ? '<span style="font-size:9px; color:var(--muted); margin-left:8px;">(Local)</span>' : '';
+      
+      return `
+        <div class="history-card">
+          <div class="hc-top">
+            <div>
+              <div style="font-weight:700;font-size:15px;margin-bottom:4px;">${s.workerType} Schedule ${isLocal}</div>
+              <div class="hc-date">${date}</div>
+            </div>
+            <div class="hc-profit">₹${s.totalProfit.toLocaleString()}</div>
+          </div>
+          <div class="hc-tags">${tags}${skips}</div>
+          <div class="hc-meta">${s.scheduledJobs.length} jobs scheduled · ${s.totalSlots} time slots</div>
+        </div>`;
+    }).join('');
   }
 
   // ── SAVE SCHEDULE ──
   window.saveSchedule = async () => {
-    if (!lastResult || !currentUser) {
-      showToast('No schedule to save or user not logged in.', 'error');
+    if (!lastResult) {
+      showToast('No schedule to save.', 'error');
       return;
     }
 
@@ -758,40 +778,56 @@
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Saving...';
 
+    const scheduleData = {
+      userId: currentUser ? currentUser.uid : 'dev-user-123',
+      workerType: userProfile ? userProfile.workerType : 'Freelancer',
+      totalProfit: lastResult.totalProfit,
+      totalSlots: lastResult.maxDeadline || 30,
+      scheduledJobs: lastResult.scheduled,
+      skippedJobs: lastResult.skipped,
+      createdAt: new Date().toISOString()
+    };
+
     try {
-      const scheduleData = {
-        userId: currentUser.uid,
-        workerType: userProfile.workerType || 'Freelancer',
-        totalProfit: lastResult.totalProfit,
-        totalSlots: lastResult.maxDeadline || 30,
-        scheduledJobs: lastResult.scheduled,
-        skippedJobs: lastResult.skipped,
-        createdAt: new Date().toISOString()
-      };
+      // 1. Save locally to localStorage (Always do this)
+      const stored = localStorage.getItem('jobmax_local_history');
+      const localHistory = stored ? JSON.parse(stored) : [];
+      localHistory.unshift(scheduleData); // Add to beginning
+      localStorage.setItem('jobmax_local_history', JSON.stringify(localHistory.slice(0, 50))); // Keep last 50
 
-      await addDoc(collection(db, 'schedules'), scheduleData);
+      // 2. Save to Firebase if logged in and not dev bypass
+      if (currentUser && currentUser.uid !== 'dev-user-123') {
+        await addDoc(collection(db, 'schedules'), scheduleData);
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, {
+          totalProfit: increment(lastResult.totalProfit),
+          schedulesRun: increment(1),
+          jobsCompleted: increment(lastResult.scheduled.length),
+          lastScheduledAt: new Date().toISOString()
+        });
+        showToast('✓ Schedule saved to Cloud & Local!', 'success');
+      } else {
+        showToast('✓ Schedule saved to local history!', 'success');
+      }
 
-      // Update user stats with proper increment
-      const userRef = doc(db, 'users', currentUser.uid);
-      await updateDoc(userRef, {
-        totalProfit: increment(lastResult.totalProfit),
-        schedulesRun: increment(1),
-        jobsCompleted: increment(lastResult.scheduled.length),
-        lastScheduledAt: new Date().toISOString()
-      });
-
-      showToast('✓ Schedule saved to Firebase!', 'success');
       btn.textContent = '✓ Saved';
-
-      // Reload user profile to reflect updated stats
-      await loadUserProfile(currentUser.uid);
-      loadHistory();
+      loadHistory(); // Refresh history tab
+      
+      // Update local profile stats for dev mode
+      if (!currentUser || currentUser.uid === 'dev-user-123') {
+        userProfile.totalProfit += lastResult.totalProfit;
+        userProfile.schedulesRun += 1;
+        userProfile.jobsCompleted += lastResult.scheduled.length;
+        renderProfile();
+      } else {
+        await loadUserProfile(currentUser.uid);
+      }
 
     } catch(e) {
       console.error('Save error:', e);
-      showToast('Failed to save. Check Firebase config.', 'error');
+      showToast('Failed to save. Schedule saved locally only.', 'warning');
       btn.disabled = false;
-      btn.textContent = '💾 Save to Firebase';
+      btn.textContent = '💾 Save Schedule';
     }
   };
 
@@ -845,15 +881,35 @@ function populateHourDropdown() {
   }
 }
 
-// Initialize dropdowns when page loads
+// Initialize dropdowns and date limits when page loads
+function initializeDateLimits() {
+  const dateInp = document.getElementById('inp-date');
+  if (dateInp) {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const minDate = `${year}-${month}-${day}`;
+    
+    dateInp.setAttribute('min', minDate);
+    console.log('Date picker min set to:', minDate);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   populateHourDropdown();
   populateMinuteDropdown();
+  initializeDateLimits();
 });
 
 function switchTab(name, el) {
   document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab === el));
   document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.toggle('active', panel.id === 'tab-' + name));
+  
+  // Re-initialize date limits when switching back to scheduler tab
+  if (name === 'scheduler') {
+    initializeDateLimits();
+  }
 }
 
 function addJob() {
@@ -870,6 +926,15 @@ function addJob() {
 
     if (!jobType || !name || !date || !hour || !minute || !profit || profit < 100) {
       showToast('Please fill in all fields with valid values.', 'error');
+      return;
+    }
+
+    // Double check: No past dates
+    const selectedDate = new Date(date);
+    const todayStart = new Date();
+    todayStart.setHours(0,0,0,0);
+    if (selectedDate < todayStart) {
+      showToast('Invalid deadline: Please enter a future date.', 'error');
       return;
     }
 
