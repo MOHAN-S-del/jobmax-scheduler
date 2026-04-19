@@ -6,22 +6,22 @@
 #include <stdlib.h>
 #include <sstream>
 #include <iomanip>
+#include <numeric>
 
 using namespace std;
 
 // ─── Helper: Calculate days until deadline ────────────
 int calculateDaysUntilDeadline(const string& deadline_str, string& error_msg) {
-    // Parse ISO datetime string (e.g., "2024-01-15T10:00:00")
-    // Return days until deadline from current time
-    
     struct tm deadline_tm = {};
+    memset(&deadline_tm, 0, sizeof(struct tm));
     istringstream ss(deadline_str);
+    
+    // Try ISO datetime format
     ss >> get_time(&deadline_tm, "%Y-%m-%dT%H:%M:%S");
     
     if (ss.fail()) {
-        // Fallback: try date only format
         ss.clear();
-        ss.str(deadline_str.substr(0, 10)); // Take date part only
+        ss.str(deadline_str.substr(0, 10));
         ss >> get_time(&deadline_tm, "%Y-%m-%d");
         if (ss.fail()) {
             error_msg = "Invalid date format. Expected YYYY-MM-DD.";
@@ -32,22 +32,22 @@ int calculateDaysUntilDeadline(const string& deadline_str, string& error_msg) {
     time_t deadline_time = mktime(&deadline_tm);
     time_t now = time(nullptr);
     
-    // Get beginning of today for fair comparison
     struct tm* now_tm = localtime(&now);
-    now_tm->tm_hour = 0;
-    now_tm->tm_min = 0;
-    now_tm->tm_sec = 0;
-    time_t today_start = mktime(now_tm);
+    struct tm today_tm = *now_tm;
+    today_tm.tm_hour = 0;
+    today_tm.tm_min = 0;
+    today_tm.tm_sec = 0;
+    time_t today_start = mktime(&today_tm);
 
     if (deadline_time < today_start) {
         error_msg = "Invalid deadline: Please enter a future date.";
-        return -2; // Special code for past date
+        return -2;
     }
     
     double seconds_diff = difftime(deadline_time, now);
     int days_diff = static_cast<int>(seconds_diff / (60 * 60 * 24));
     
-    return max(0, days_diff + 1); // 0 for today, >0 for future
+    return max(0, days_diff + 1);
 }
 
 // ─── Job Structure ────────────────────────────────────
@@ -55,20 +55,43 @@ struct Job {
     int id;
     string job_type;
     string name;
-    string deadline;  // ISO datetime string
+    string deadline;
     int profit;
-    int days_deadline; // calculated days until deadline
+    int days_deadline;
+};
+
+// ─── DSU for Optimization ─────────────────────────────
+struct DSU {
+    vector<int> parent;
+    DSU(int n) {
+        parent.resize(n + 1);
+        iota(parent.begin(), parent.end(), 0);
+    }
+    int find(int i) {
+        if (i == parent[i]) return i;
+        return parent[i] = find(parent[i]);
+    }
+    void unite(int i, int j) {
+        parent[i] = j;
+    }
 };
 
 // ─── Schedule Result Structure ────────────────────────
-struct ScheduleResult {
-    vector<pair<int, string>> scheduled;  // {slot, job_name}
-    vector<Job> skipped;
-    int total_profit;
-    vector<string> steps;  // Algorithm execution steps
+struct ScheduledJob {
+    int day;
+    string name;
+    int profit;
+    string job_type;
 };
 
-// ─── Greedy Job Scheduling Algorithm ──────────────────
+struct ScheduleResult {
+    vector<ScheduledJob> scheduled;
+    vector<Job> skipped;
+    int total_profit;
+    vector<string> steps;
+};
+
+// ─── Optimized Greedy Job Scheduling Algorithm ────────
 ScheduleResult scheduleJobs(vector<Job>& jobs) {
     ScheduleResult result;
     result.total_profit = 0;
@@ -79,55 +102,40 @@ ScheduleResult scheduleJobs(vector<Job>& jobs) {
     }
 
     result.steps.push_back("Step 1: Sorting " + to_string(jobs.size()) + " jobs by profit (descending)");
-    // ── STEP 1: Sort jobs by profit in descending ordegt r ──
     sort(jobs.begin(), jobs.end(), [](const Job& a, const Job& b) {
         return a.profit > b.profit;
     });
 
-    // ── STEP 2: Find maximum deadline ──
     int max_deadline = 0;
     for (const auto& job : jobs) {
-        max_deadline = max(max_deadline, job.days_deadline);
+        if (job.days_deadline > 0)
+            max_deadline = max(max_deadline, job.days_deadline);
     }
+    
+    // Cap max deadline to something reasonable for slots (e.g., 365 days)
+    max_deadline = min(max_deadline, 365);
+    
     result.steps.push_back("Step 2: Maximum deadline is " + to_string(max_deadline) + " days");
-
-    // ── STEP 3: Initialize slots array (false = empty, true = occupied) ──
-    vector<bool> slots(max_deadline, false);
-    vector<string> slot_jobs(max_deadline, "");
     result.steps.push_back("Step 3: Initialized " + to_string(max_deadline) + " time slots");
 
-    // ── STEP 4: For each job (in order of decreasing profit) ──
+    DSU dsu(max_deadline);
     result.steps.push_back("Step 4: Scheduling jobs in profit order");
+
     for (const auto& job : jobs) {
-        // Special Case: Job has a past deadline
         if (job.days_deadline == -2) {
             result.skipped.push_back(job);
             result.steps.push_back("  ✗ Skipped '" + job.name + "' (₹" + to_string(job.profit) + ") - Deadline was in the past");
             continue;
         }
 
-        // Try to place job in latest available slot before deadline
-        bool placed = false;
-        int available_slot = -1;
+        int available_slot = dsu.find(min(job.days_deadline, max_deadline));
         
-        for (int t = min(job.days_deadline, max_deadline) - 1; t >= 0; t--) {
-            if (!slots[t]) {
-                available_slot = t;
-                break;
-            }
-        }
-        
-        if (available_slot != -1) {
-            // Slot is free, place job here
-            slots[available_slot] = true;
-            slot_jobs[available_slot] = job.name;
-            result.scheduled.push_back({available_slot + 1, job.name});
+        if (available_slot > 0) {
+            dsu.unite(available_slot, available_slot - 1);
+            result.scheduled.push_back({available_slot, job.name, job.profit, job.job_type});
             result.total_profit += job.profit;
-            placed = true;
-            result.steps.push_back("  ✓ Scheduled '" + job.name + "' (₹" + to_string(job.profit) + ") on day " + to_string(available_slot + 1));
-        }
-
-        if (!placed) {
+            result.steps.push_back("  ✓ Scheduled '" + job.name + "' (₹" + to_string(job.profit) + ") on day " + to_string(available_slot));
+        } else {
             result.skipped.push_back(job);
             result.steps.push_back("  ✗ Skipped '" + job.name + "' (₹" + to_string(job.profit) + ") - no available slot before deadline");
         }
@@ -137,140 +145,117 @@ ScheduleResult scheduleJobs(vector<Job>& jobs) {
     return result;
 }
 
-// ─── Simple JSON Parser for input ─────────────────────
-bool parseJobsFromJSON(const string& json_str, vector<Job>& jobs, string& error_msg) {
-    // Simple parser for JSON array of jobs
-    // Format: [{"id":1,"job_type":"Web Development","name":"Project","deadline":"2024-01-01T10:00","profit":500},...]
+// ─── Robust JSON Parser ───────────────────────────────
+string getJsonField(const string& json, const string& field) {
+    size_t fpos = json.find("\"" + field + "\"");
+    if (fpos == string::npos) return "";
     
+    size_t colon = json.find(":", fpos);
+    if (colon == string::npos) return "";
+    
+    size_t start = json.find_first_not_of(" \t\n\r", colon + 1);
+    if (start == string::npos) return "";
+    
+    if (json[start] == '\"') {
+        size_t end = json.find("\"", start + 1);
+        if (end == string::npos) return "";
+        return json.substr(start + 1, end - start - 1);
+    } else {
+        size_t end = json.find_first_of(",}\n\r\t ", start);
+        if (end == string::npos) end = json.length();
+        return json.substr(start, end - start);
+    }
+}
+
+bool parseJobsFromJSON(const string& json_str, vector<Job>& jobs, string& error_msg) {
     jobs.clear();
     size_t pos = 0;
 
     while ((pos = json_str.find("{", pos)) != string::npos) {
-        Job job;
-        job.id = 0;
-        job.days_deadline = -1; 
-        job.profit = 0;
-        job.name = "";
-        job.job_type = "";
-        job.deadline = "";
-        
         size_t end_pos = json_str.find("}", pos);
-        string job_str = json_str.substr(pos, end_pos - pos + 1);
+        if (end_pos == string::npos) break;
         
-        // ... (existing parsing logic remains same) ...
-        // Parse id
-        size_t id_pos = job_str.find("\"id\"");
-        if (id_pos != string::npos) {
-            size_t colon = job_str.find(":", id_pos);
-            size_t comma = job_str.find(",", colon);
-            string id_str = job_str.substr(colon + 1, comma - colon - 1);
-            id_str.erase(remove_if(id_str.begin(), id_str.end(), ::isspace), id_str.end());
-            job.id = stoi(id_str);
-        }
-
-        // Parse job_type
-        size_t type_pos = job_str.find("\"job_type\"");
-        if (type_pos != string::npos) {
-            size_t colon = job_str.find(":", type_pos);
-            size_t first_quote = job_str.find("\"", colon);
-            size_t second_quote = job_str.find("\"", first_quote + 1);
-            job.job_type = job_str.substr(first_quote + 1, second_quote - first_quote - 1);
-        }
-
-        // Parse name
-        size_t name_pos = job_str.find("\"name\"");
-        if (name_pos != string::npos) {
-            size_t colon = job_str.find(":", name_pos);
-            size_t first_quote = job_str.find("\"", colon);
-            size_t second_quote = job_str.find("\"", first_quote + 1);
-            job.name = job_str.substr(first_quote + 1, second_quote - first_quote - 1);
-        }
-
-        // Parse deadline (datetime string)
-        size_t deadline_pos = job_str.find("\"deadline\"");
-        if (deadline_pos != string::npos) {
-            size_t colon = job_str.find(":", deadline_pos);
-            size_t first_quote = job_str.find("\"", colon);
-            size_t second_quote = job_str.find("\"", first_quote + 1);
-            job.deadline = job_str.substr(first_quote + 1, second_quote - first_quote - 1);
-            
-            // Calculate actual days until deadline with validation
+        string job_obj = json_str.substr(pos, end_pos - pos + 1);
+        
+        Job job;
+        string id_s = getJsonField(job_obj, "id");
+        job.id = id_s.empty() ? 0 : stoi(id_s);
+        job.job_type = getJsonField(job_obj, "job_type");
+        job.name = getJsonField(job_obj, "name");
+        job.deadline = getJsonField(job_obj, "deadline");
+        string profit_s = getJsonField(job_obj, "profit");
+        job.profit = profit_s.empty() ? 0 : stoi(profit_s);
+        
+        if (!job.deadline.empty()) {
             job.days_deadline = calculateDaysUntilDeadline(job.deadline, error_msg);
-            if (job.days_deadline == -1) {
-                return false; // Stop ONLY if date format is invalid
-            }
-            // If job.days_deadline == -2 (past date), we still keep the job but it will be skipped by scheduler
+            if (job.days_deadline == -1) return false;
+        } else {
+            job.days_deadline = 0;
         }
 
-        // Parse profit
-        size_t profit_pos = job_str.find("\"profit\"");
-        if (profit_pos != string::npos) {
-            size_t colon = job_str.find(":", profit_pos);
-            size_t comma = job_str.find(",", colon);
-            if (comma == string::npos) comma = job_str.find("}", colon);
-            string profit_str = job_str.substr(colon + 1, comma - colon - 1);
-            profit_str.erase(remove_if(profit_str.begin(), profit_str.end(), ::isspace), profit_str.end());
-            job.profit = stoi(profit_str);
-        }
-
-        // We accept the job even if deadline is -2, so it can be handled by scheduleJobs
-        if (!job.name.empty() && job.profit > 0) {
+        if (!job.name.empty() && job.profit >= 0) {
             jobs.push_back(job);
         }
         
         pos = end_pos + 1;
     }
-
     return !jobs.empty();
 }
 
 // ─── Output result as JSON ────────────────────────────
-string resultToJSON(const ScheduleResult& result) {
-    string json = "{\n";
-    json += "  \"scheduled\": [\n";
-    
-    for (size_t i = 0; i < result.scheduled.size(); i++) {
-        json += "    {\"day\": " + to_string(result.scheduled[i].first) + 
-                ", \"job\": \"" + result.scheduled[i].second + "\"}";
-        if (i < result.scheduled.size() - 1) json += ",";
-        json += "\n";
+string escapeJson(const string& s) {
+    string out;
+    for (char c : s) {
+        if (c == '"') out += "\\\"";
+        else if (c == '\\') out += "\\\\";
+        else if (c == '\b') out += "\\b";
+        else if (c == '\f') out += "\\f";
+        else if (c == '\n') out += "\\n";
+        else if (c == '\r') out += "\\r";
+        else if (c == '\t') out += "\\t";
+        else out += c;
     }
-    
-    json += "  ],\n";
-    json += "  \"skipped\": [\n";
-    
-    for (size_t i = 0; i < result.skipped.size(); i++) {
-        json += "    {\"name\": \"" + result.skipped[i].name + "\", \"profit\": " + 
-                to_string(result.skipped[i].profit) + "}";
-        if (i < result.skipped.size() - 1) json += ",";
-        json += "\n";
-    }
-    
-    json += "  ],\n";
-    json += "  \"steps\": [\n";
-    
-    for (size_t i = 0; i < result.steps.size(); i++) {
-        json += "    \"" + result.steps[i] + "\"";
-        if (i < result.steps.size() - 1) json += ",";
-        json += "\n";
-    }
-    
-    json += "  ],\n";
-    json += "  \"total_profit\": " + to_string(result.total_profit) + "\n";
-    json += "}\n";
-    
-    return json;
+    return out;
 }
 
-// ─── Main ─────────────────────────────────────────────
+string resultToJSON(const ScheduleResult& result) {
+    stringstream ss;
+    ss << "{\n";
+    ss << "  \"scheduled\": [\n";
+    for (size_t i = 0; i < result.scheduled.size(); i++) {
+        ss << "    {\"day\": " << result.scheduled[i].day 
+           << ", \"name\": \"" << escapeJson(result.scheduled[i].name) << "\""
+           << ", \"profit\": " << result.scheduled[i].profit
+           << ", \"job_type\": \"" << escapeJson(result.scheduled[i].job_type) << "\"}";
+        if (i < result.scheduled.size() - 1) ss << ",";
+        ss << "\n";
+    }
+    ss << "  ],\n";
+    ss << "  \"skipped\": [\n";
+    for (size_t i = 0; i < result.skipped.size(); i++) {
+        ss << "    {\"name\": \"" << escapeJson(result.skipped[i].name) << "\""
+           << ", \"profit\": " << result.skipped[i].profit << "}";
+        if (i < result.skipped.size() - 1) ss << ",";
+        ss << "\n";
+    }
+    ss << "  ],\n";
+    ss << "  \"steps\": [\n";
+    for (size_t i = 0; i < result.steps.size(); i++) {
+        ss << "    \"" << escapeJson(result.steps[i]) << "\"";
+        if (i < result.steps.size() - 1) ss << ",";
+        ss << "\n";
+    }
+    ss << "  ],\n";
+    ss << "  \"total_profit\": " << result.total_profit << "\n";
+    ss << "}\n";
+    return ss.str();
+}
+
 int main(int argc, char* argv[]) {
     string json_input;
-    
-    // Read JSON from stdin (preferred) or command line argument
     if (argc >= 2) {
         json_input = argv[1];
     } else {
-        // Read entire stdin
         string line;
         while (getline(cin, line)) {
             json_input += line;
@@ -284,21 +269,16 @@ int main(int argc, char* argv[]) {
 
     vector<Job> jobs;
     string error_msg;
-
     if (!parseJobsFromJSON(json_input, jobs, error_msg)) {
         if (!error_msg.empty()) {
-            cout << "{\n  \"error\": \"" << error_msg << "\",\n  \"scheduled\": [],\n  \"skipped\": [],\n  \"total_profit\": 0,\n  \"steps\": [\"Error: " << error_msg << "\"]\n}\n";
-            return 0; // Return valid JSON error instead of crashing
+            cout << "{\n  \"error\": \"" << escapeJson(error_msg) << "\",\n  \"scheduled\": [],\n  \"skipped\": [],\n  \"total_profit\": 0,\n  \"steps\": [\"Error: " << escapeJson(error_msg) << "\"]\n}\n";
+            return 0;
         }
         cerr << "Failed to parse jobs from JSON" << endl;
         return 1;
     }
 
-    // Run greedy algorithm
     ScheduleResult result = scheduleJobs(jobs);
-
-    // Output as JSON
     cout << resultToJSON(result);
-
     return 0;
 }
