@@ -587,8 +587,10 @@
   const db = getFirestore(app);
 
   let currentUser = null;
+  window.currentUser = null;
   let userProfile = null;
   let lastResult = null;
+  window.lastResult = null;
 
   // Make userProfile globally accessible
   window.userProfile = userProfile;
@@ -622,9 +624,10 @@
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
       // For local development, bypass authentication
-      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        console.log('🔧 Local development: Bypassing authentication');
-        currentUser = { uid: 'dev-user-123', displayName: 'Developer', email: 'dev@example.com' };
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('onrender.com')) {
+        console.log('🔧 Development/Render: Bypassing authentication');
+        currentUser = { uid: 'dev-user-123', displayName: 'Developer', email: 'dev@example.com', getIdToken: async () => 'mock-token' };
+        window.currentUser = currentUser;
         initializeUserProfile();
         window.userProfile = userProfile;
         renderProfile();
@@ -635,6 +638,7 @@
     }
 
     currentUser = user;
+    window.currentUser = user;
     
     // Sync session with Flask backend for API reliability
     try {
@@ -783,6 +787,7 @@
 
   // ── SAVE SCHEDULE ──
   window.saveSchedule = async () => {
+    const lastResult = window.lastResult;
     if (!lastResult) {
       showToast('No schedule to save.', 'error');
       return;
@@ -1113,8 +1118,10 @@ function addJob() {
     }
 
     // Ensure user profile is available
-    ensureUserProfile();
-    console.log('userProfile after ensure:', userProfile);
+    const userProfile = window.userProfile;
+    if (!userProfile) {
+      ensureUserProfile();
+    }
 
     const btn = document.querySelector('.btn-run');
     btn.disabled = true;
@@ -1123,11 +1130,15 @@ function addJob() {
     try {
       // For local development, bypass authentication
       let idToken = null;
-      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const currentUser = window.currentUser; // Access global currentUser
+      
+      if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && !window.location.hostname.includes('onrender.com')) {
         if (!currentUser) {
           showToast('Please log in first.', 'error');
           return;
         }
+        idToken = await currentUser.getIdToken();
+      } else if (currentUser && currentUser.getIdToken) {
         idToken = await currentUser.getIdToken();
       }
 
@@ -1193,7 +1204,14 @@ function addJob() {
       document.getElementById('result-steps').innerHTML = stepsHtml;
 
       // Create timeline from scheduled jobs
-      const maxDay = Math.max(...scheduled.map(s => s.day), 0);
+      const maxDay = scheduled.length > 0 ? Math.max(...scheduled.map(s => s.day), 0) : 0;
+      
+      // Update global lastResult for saving
+      window.lastResult = {
+        ...result,
+        maxDeadline: maxDay
+      };
+      
       const timelineSlots = new Array(maxDay).fill(null);
 
       scheduled.forEach(s => {
