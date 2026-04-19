@@ -1216,18 +1216,23 @@ function addJob() {
 
       scheduled.forEach(s => {
         if (s.day <= maxDay) {
-          timelineSlots[s.day - 1] = { name: s.job, profit: 0 };
+          timelineSlots[s.day - 1] = { name: s.name || s.job, profit: s.profit || 0 };
         }
       });
 
       document.getElementById('result-timeline').innerHTML = timelineSlots.map((job,i) => job
-        ? `<div class="tslot filled"><div class="t-time">Day ${i+1}</div><div class="t-job">${job.name.length>9?job.name.slice(0,8)+'…':job.name}</div></div>`
+        ? `<div class="tslot filled"><div class="t-time">Day ${i+1}</div><div class="t-job">${(job.name || '').length>9?(job.name || '').slice(0,8)+'…':(job.name || '')}</div></div>`
         : `<div class="tslot empty"><div class="t-time">Day ${i+1}</div><div class="t-job">idle</div></div>`
       ).join('');
 
       // Store result for saving
       window.lastResult = {
-        scheduled: scheduled.map(s => ({ name: s.job, day: s.day })),
+        scheduled: scheduled.map(s => ({ 
+          name: s.name || s.job, 
+          day: s.day,
+          job_type: s.job_type || 'General',
+          profit: s.profit || 0
+        })),
         skipped: skipped,
         totalProfit: totalProfit,
         maxDeadline: maxDay,
