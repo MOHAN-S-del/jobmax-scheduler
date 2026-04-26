@@ -569,7 +569,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, collection, addDoc, query, where, orderBy, getDocs, updateDoc, increment }
+  import { getFirestore, doc, getDoc, setDoc, collection, addDoc, query, where, orderBy, getDocs, updateDoc, increment }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   // ── Firebase Config ──
@@ -788,6 +788,9 @@
   // ── SAVE SCHEDULE ──
   window.saveSchedule = async () => {
     const lastResult = window.lastResult;
+    const currentUser = window.currentUser;
+    const userProfile = window.userProfile;
+
     if (!lastResult) {
       showToast('No schedule to save.', 'error');
       return;
@@ -800,51 +803,67 @@
     const scheduleData = {
       userId: currentUser ? currentUser.uid : 'dev-user-123',
       workerType: userProfile ? userProfile.workerType : 'Freelancer',
-      totalProfit: lastResult.totalProfit,
-      totalSlots: lastResult.maxDeadline || 30,
-      scheduledJobs: lastResult.scheduled,
-      skippedJobs: lastResult.skipped,
+      totalProfit: lastResult.totalProfit || 0,
+      totalSlots: lastResult.maxDeadline || 0,
+      scheduledJobs: lastResult.scheduled || [],
+      skippedJobs: lastResult.skipped || [],
       createdAt: new Date().toISOString()
     };
 
     try {
       // 1. Save locally to localStorage (Always do this)
-      const stored = localStorage.getItem('jobmax_local_history');
-      const localHistory = stored ? JSON.parse(stored) : [];
-      localHistory.unshift(scheduleData); // Add to beginning
-      localStorage.setItem('jobmax_local_history', JSON.stringify(localHistory.slice(0, 50))); // Keep last 50
+      try {
+        const stored = localStorage.getItem('jobmax_local_history');
+        const localHistory = stored ? JSON.parse(stored) : [];
+        localHistory.unshift(scheduleData); 
+        localStorage.setItem('jobmax_local_history', JSON.stringify(localHistory.slice(0, 50)));
+      } catch (lsErr) {
+        console.warn('LocalStorage save failed:', lsErr);
+      }
 
       // 2. Save to Firebase if logged in and not dev bypass
       if (currentUser && currentUser.uid !== 'dev-user-123') {
+        // Save schedule document
         await addDoc(collection(db, 'schedules'), scheduleData);
+        
+        // Update user stats - use setDoc with merge:true to be more robust
         const userRef = doc(db, 'users', currentUser.uid);
-        await updateDoc(userRef, {
-          totalProfit: increment(lastResult.totalProfit),
+        await setDoc(userRef, {
+          totalProfit: increment(lastResult.totalProfit || 0),
           schedulesRun: increment(1),
-          jobsCompleted: increment(lastResult.scheduled.length),
-          lastScheduledAt: new Date().toISOString()
-        });
+          jobsCompleted: increment((lastResult.scheduled || []).length),
+          lastScheduledAt: new Date().toISOString(),
+          email: currentUser.email || '',
+          name: currentUser.displayName || userProfile.name || 'User'
+        }, { merge: true });
+
         showToast('✓ Schedule saved to Cloud & Local!', 'success');
       } else {
         showToast('✓ Schedule saved to local history!', 'success');
       }
 
       btn.textContent = '✓ Saved';
-      loadHistory(); // Refresh history tab
+      loadHistory(); 
       
-      // Update local profile stats for dev mode
-      if (!currentUser || currentUser.uid === 'dev-user-123') {
-        userProfile.totalProfit += lastResult.totalProfit;
+      // Update local profile stats
+      if (userProfile) {
+        userProfile.totalProfit += (lastResult.totalProfit || 0);
         userProfile.schedulesRun += 1;
-        userProfile.jobsCompleted += lastResult.scheduled.length;
+        userProfile.jobsCompleted += (lastResult.scheduled || []).length;
         renderProfile();
-      } else {
+      }
+
+      if (currentUser && currentUser.uid !== 'dev-user-123') {
         await loadUserProfile(currentUser.uid);
       }
 
     } catch(e) {
       console.error('Save error:', e);
-      showToast('Failed to save. Schedule saved locally only.', 'warning');
+      // Detailed error message if possible
+      const msg = e.code === 'permission-denied' ? 
+        'Permission denied. Check Firestore rules.' : 
+        'Failed to save. Schedule saved locally only.';
+      showToast(msg, 'warning');
       btn.disabled = false;
       btn.textContent = '💾 Save Schedule';
     }
