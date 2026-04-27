@@ -123,10 +123,16 @@
   /* ── STATS ROW ── */
   .stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
   .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
-  .stat-card.highlight { border-color: rgba(126,245,106,0.3); background: rgba(126,245,106,0.04); }
+  .stat-card.highlight { 
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent3) 100%); 
+    border: none; 
+    box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
+  }
+  .stat-card.highlight .s-label { color: rgba(255, 255, 255, 0.8); }
+  .stat-card.highlight .s-val { color: #ffffff !important; }
   .s-label { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono',monospace; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
   .s-val { font-size: 26px; font-weight: 800; }
-  .s-val.green { color: var(--accent); }
+  .s-val.green { color: var(--success); }
 
   /* ── SECTION ── */
   .section-label { font-family: 'JetBrains Mono',monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
