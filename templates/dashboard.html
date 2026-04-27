@@ -135,7 +135,7 @@
   .s-val.green { color: var(--success); }
 
   /* ── SECTION ── */
-  .section-label { font-family: 'JetBrains Mono',monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+  .section-label { font-family: 'JetBrains Mono',monospace; font-size: 11px; color: rgba(255, 255, 255, 0.7); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; font-weight: 600; }
   .panel-box {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -609,7 +609,8 @@
       totalProfit: 0,
       schedulesRun: 0,
       jobsCompleted: 0,
-      email: 'dev@example.com'
+      email: 'dev@example.com',
+      memberSince: 'April 2026'
     };
     console.log('User profile initialized:', userProfile);
   }
@@ -674,7 +675,8 @@
           totalProfit: data.totalProfit || 0,
           schedulesRun: data.schedulesRun || 0,
           jobsCompleted: data.jobsCompleted || 0,
-          email: data.email || currentUser.email || ''
+          email: data.email || currentUser.email || '',
+          memberSince: data.memberSince || 'April 2026'
         };
       } else {
         // Create default profile for new users
@@ -684,7 +686,8 @@
           totalProfit: 0,
           schedulesRun: 0,
           jobsCompleted: 0,
-          email: currentUser.email || ''
+          email: currentUser.email || '',
+          memberSince: 'April 2026'
         };
         // Optionally save the default profile to Firestore
         try {
@@ -704,7 +707,8 @@
         totalProfit: 0,
         schedulesRun: 0,
         jobsCompleted: 0,
-        email: currentUser.email || ''
+        email: currentUser.email || '',
+        memberSince: 'April 2026'
       };
       window.userProfile = userProfile;
       renderProfile();
@@ -717,11 +721,13 @@
     }
 
     const initials = (userProfile.name || 'U').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    
+    // Topbar
     document.getElementById('user-avatar').textContent = initials;
     document.getElementById('user-name').textContent = userProfile.name || 'Developer';
     document.getElementById('user-role').textContent = userProfile.workerType || 'Freelancer';
 
-    // Update stats with proper formatting
+    // Scheduler Tab Stats
     const totalProfit = userProfile.totalProfit || 0;
     const schedulesRun = userProfile.schedulesRun || 0;
     const jobsCompleted = userProfile.jobsCompleted || 0;
@@ -730,6 +736,23 @@
     document.getElementById('stat-schedules').textContent = schedulesRun;
     document.getElementById('stat-completed').textContent = jobsCompleted;
     document.getElementById('stat-earnings').textContent = '₹' + totalProfit.toLocaleString();
+
+    // Profile Tab
+    const profileAvatar = document.getElementById('profile-avatar');
+    const profileName = document.getElementById('profile-name');
+    const profileEmail = document.getElementById('profile-email');
+    const profileWorker = document.getElementById('profile-worker');
+    const profileSince = document.getElementById('profile-since');
+    const profileSchedules = document.getElementById('profile-schedules');
+    const profileProfit = document.getElementById('profile-profit');
+
+    if (profileAvatar) profileAvatar.textContent = initials;
+    if (profileName) profileName.textContent = userProfile.name || 'Developer';
+    if (profileEmail) profileEmail.textContent = userProfile.email || 'dev@example.com';
+    if (profileWorker) profileWorker.textContent = userProfile.workerType || 'Freelancer';
+    if (profileSince) profileSince.textContent = userProfile.memberSince || 'April 2026';
+    if (profileSchedules) profileSchedules.textContent = schedulesRun;
+    if (profileProfit) profileProfit.textContent = '₹' + totalProfit.toLocaleString();
 
     console.log('Profile rendered:', userProfile);
   }
